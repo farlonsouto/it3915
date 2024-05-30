@@ -2,6 +2,12 @@ from nilmtk.api import API
 import warnings
 from nilmtk.disaggregate import CO, Hart85, Mean, FHMMExact
 
+import h5py
+
+filepath = 'ukdale.h5'
+with h5py.File(filepath, 'r') as f:
+    print(f.keys())
+
 warnings.filterwarnings("ignore")
 
 experiment = {
@@ -17,18 +23,19 @@ experiment = {
             'Dataport': {
                 'path': 'ukdale.h5',
                 'buildings': {
-                    54: {
+                    1: {
                         'start_time': '2015-01-28',
                         'end_time': '2015-02-12'
-                    },
-                    56: {
-                        'start_time': '2015-01-28',
-                        'end_time': '2015-02-12'
-                    },
-                    57: {
-                        'start_time': '2015-04-30',
-                        'end_time': '2015-05-14'
-                    },
+                    }
+                    #,
+                    #2: {
+                    #    'start_time': '2015-01-28',
+                    #    'end_time': '2015-02-12'
+                    #},
+                    #3: {
+                    #    'start_time': '2015-04-30',
+                    #    'end_time': '2015-05-14'
+                    #}"""
                 }
             }
         }
@@ -38,18 +45,14 @@ experiment = {
             'Datport': {
                 'path': 'ukdale.h5',
                 'buildings': {
-                    94: {
+                    4: {
                         'start_time': '2015-04-30',
                         'end_time': '2015-05-07'
                     },
-                    103: {
+                    5: {
                         'start_time': '2014-01-26',
                         'end_time': '2014-02-03'
-                    },
-                    113: {
-                        'start_time': '2015-04-30',
-                        'end_time': '2015-05-07'
-                    },
+                    }
                 }
             }
         },
