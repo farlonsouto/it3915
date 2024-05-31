@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 experiment = {
     'power': {'mains': ['apparent', 'active'], 'appliance': ['apparent', 'active']},
     'sample_rate': 60,
-    'appliances': ['fridge', 'air conditioner', 'electric furnace', 'washing machine'],
+    'appliances': ['toaster', 'kettle', 'microwave'],
     'artificial_aggregate': True,
     'chunksize': 20000,
     'DROP_ALL_NANS': False,
@@ -27,15 +27,6 @@ experiment = {
                         'start_time': '2015-01-28',
                         'end_time': '2015-02-12'
                     }
-                    #,
-                    #2: {
-                    #    'start_time': '2015-01-28',
-                    #    'end_time': '2015-02-12'
-                    #},
-                    #3: {
-                    #    'start_time': '2015-04-30',
-                    #    'end_time': '2015-05-14'
-                    #}"""
                 }
             }
         }
