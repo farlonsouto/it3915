@@ -1,31 +1,42 @@
 from nilmtk.api import API
-import warnings
-from nilmtk.disaggregate import CO, Hart85, Mean, FHMMExact
+from nilmtk.disaggregate import FHMMExact, Mean, CO
+from hmmlearn.hmm import GaussianHMM
+import numpy as np
 
-import h5py
 
-filepath = 'ukdale.h5'
-with h5py.File(filepath, 'r') as f:
-    print(f.keys())
+class RegularizedFHMMExact(FHMMExact):
 
-warnings.filterwarnings("ignore")
+    def partial_fit(self, train_mains, train_submeters):
+        super(RegularizedFHMMExact, self).partial_fit(train_mains, train_submeters)
+
+        # Regularize covariance matrices
+        for appliance in self.model:
+            if isinstance(self.model[appliance], GaussianHMM):
+                covars = self.model[appliance].covars_
+                print(f"Before regularization: {covars}")
+                try:
+                    covars += 1e-4 * np.eye(covars.shape[-1])
+                except ValueError as e:
+                    print(f"Covariance regularization failed for appliance {appliance}: {e}")
+                print(f"After regularization: {covars}")
+
 
 experiment = {
     'power': {'mains': ['apparent', 'active'], 'appliance': ['apparent', 'active']},
     'sample_rate': 60,
-    'appliances': ['toaster', 'kettle', 'microwave'],
+    'appliances': ['kettle', 'toaster', 'microwave'],
     'artificial_aggregate': True,
     'chunksize': 20000,
-    'DROP_ALL_NANS': False,
-    'methods': {"Mean": Mean({}), "Hart85": Hart85({}), "FHMM_EXACT": FHMMExact({'num_of_states': 2}), "CO": CO({})},
+    'DROP_ALL_NANS': True,
+    'methods': {"Mean": Mean({}), "CO": CO({}), "FHMM_EXACT": RegularizedFHMMExact({'num_of_states': 2})},
     'train': {
         'datasets': {
             'Dataport': {
                 'path': 'ukdale.h5',
                 'buildings': {
                     1: {
-                        'start_time': '2015-01-28',
-                        'end_time': '2015-02-12'
+                        'start_time': '2014-01-01',
+                        'end_time': '2015-02-15'
                     }
                 }
             }
@@ -33,16 +44,12 @@ experiment = {
     },
     'test': {
         'datasets': {
-            'Datport': {
+            'Dataport': {
                 'path': 'ukdale.h5',
                 'buildings': {
-                    4: {
-                        'start_time': '2015-04-30',
-                        'end_time': '2015-05-07'
-                    },
                     5: {
-                        'start_time': '2014-01-26',
-                        'end_time': '2014-02-03'
+                        'start_time': '2014-01-01',
+                        'end_time': '2015-02-15'
                     }
                 }
             }

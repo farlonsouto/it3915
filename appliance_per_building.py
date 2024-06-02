@@ -1,29 +1,46 @@
+import sys
+
 from nilmtk import DataSet
+from pprint import pprint
 
 # Load the dataset
 dataset_path = 'ukdale.h5'
+if len(sys.argv) > 1:
+    dataset_path = sys.argv[1]
+else:
+    print("Defaulting to the DataSet file ukdale.h5")
+
 dataset = DataSet(dataset_path)
 
-# Initialize a dictionary to store building-wise appliances
-building_appliances = {}
+# Initialize a dictionary to store appliances and the buildings they occur in
+appliance_buildings = {}
 
 # Iterate through each building in the dataset
 for building_i, building in enumerate(dataset.buildings, start=1):
     elec = dataset.buildings[building].elec
-    appliances = set()
 
-    # Collect unique appliance names/types for the current building
+    # Collect appliances and the buildings they occur in
     for meter in elec.submeters().meters:
         for appliance in meter.appliances:
-            appliance_name = appliance.metadata.get('original_name', 'Unknown')  # Extract appliance name or type
-            appliances.add(appliance_name)
+            if dataset_path == 'AMPds2.h5':
+                appliance_name = appliance.metadata.get('description', 'Unknown')
+            else:
+                appliance_name = appliance.metadata.get('original_name', 'Unknown')  # Extract appliance name or type
 
-    # Store the appliances for the current building
-    building_appliances[building_i] = list(appliances)
+            if appliance_name not in appliance_buildings:
+                appliance_buildings[appliance_name] = []
+            appliance_buildings[appliance_name].append(building_i)
 
-# Pretty print the building-wise appliances
-print("Building-wise Appliances:")
-print(building_appliances)
+# Saving the appliances associated with more than one building numbers
+useful_appliances = {}
+for appliance_name in appliance_buildings:
+    list_of_buildings = list(set(appliance_buildings[appliance_name]))
+    if len(dataset.buildings) == 1 or len(list_of_buildings) > 2:
+        useful_appliances[appliance_name] = list_of_buildings
+
+# Pretty print the appliances and the buildings they occur in
+print("Appliance-wise Buildings:")
+pprint(useful_appliances)
 
 # Close the dataset
 dataset.store.close()
