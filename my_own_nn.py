@@ -7,42 +7,26 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv1D, Flatten
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 
 # Function to load and preprocess data from the HDF5 file
 def load_data(filepath, building, start_time, end_time):
     with h5py.File(filepath, 'r') as f:
-        # Adjust the dataset path based on your HDF5 file structure
         mains_data = f[f'building{building}/elec/meter1/table']
-
-        # Extract data
-        index = mains_data['index'][:]  # Load entire dataset into memory
-        values = mains_data['values_block_0'][:]  # Load entire dataset into memory
-
-        # Print out some sample values for inspection
-        print(f"Index sample: {index[:10]}")
-        print(f"Min index value: {index.min()}")
-        print(f"Max index value: {index.max()}")
-
-        # Convert to appropriate format
-        timestamps = pd.to_datetime(index)  # Default unit is ns, which is appropriate here
-        power = values.flatten()  # Ensure 'values_block_0' is the correct field
-
-        # Create a DataFrame
+        index = mains_data['index'][:]
+        values = mains_data['values_block_0'][:]
+        timestamps = pd.to_datetime(index)
+        power = values.flatten()
         df = pd.DataFrame({'timestamp': timestamps, 'power': power})
-
-        # Filter based on start and end time
         df = df[(df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)]
         df.set_index('timestamp', inplace=True)
-
         return df
 
 
 # Load training and testing data
 train_mains = load_data('ukdale.h5', 1, '2014-01-01', '2015-02-15')
 test_mains = load_data('ukdale.h5', 5, '2014-01-01', '2015-02-15')
-
-# Normalize the power data using the max value from the training data
 max_power = train_mains['power'].max()
 train_mains['power'] = train_mains['power'] / max_power
 test_mains['power'] = test_mains['power'] / max_power
@@ -83,21 +67,36 @@ model = create_model(input_shape)
 model.fit(train_generator, epochs=10, validation_data=test_generator)
 
 # Evaluate the model on the test data
-loss, mae = model.evaluate(test_generator, verbose=0)
+loss, mae = model.evaluate(test_generator)
 print(f'Test MAE: {mae}')
 
-# Get the predictions for each window in the test data
+# Generate predictions on test data
 predictions = model.predict(test_generator)
 
-# Plot original aggregated power consumption
-plt.figure(figsize=(10, 6))
-plt.plot(test_mains.index, test_mains['power'], label='Original Aggregate Power', color='blue')
+# Initialize the plot
+fig, ax = plt.subplots(figsize=(10, 6))
+original_line, = ax.plot([], [], label='Original Aggregate Power', color='blue')
+predicted_lines = [ax.plot([], [], label=f'Predicted Appliance {i + 1}')[0] for i in range(predictions.shape[1])]
 
-# Plot predicted power consumption for each appliance
-for i in range(predictions.shape[1]):
-    plt.plot(test_mains.index[window_size:], predictions[:, i], label=f'Predicted Appliance {i+1}', alpha=0.7)
 
-plt.title('Disaggregated Power Consumption')
+# Define the update function for animation
+def update(frame):
+    # Plot original aggregated power consumption up to the current timestamp
+    original_line.set_data(test_mains.index[:frame], test_mains['power'][:frame])
+
+    # Plot predicted power consumption for each appliance up to the current timestamp
+    for i, line in enumerate(predicted_lines):
+        line.set_data(test_mains.index[:frame], predictions[:frame, i])
+
+    # Update the plot title
+    ax.set_title(f'Disaggregated Power Consumption (Up to Timestamp: {test_mains.index[frame]})')
+
+    return original_line, *predicted_lines
+
+
+# Create animation
+ani = FuncAnimation(fig, update, frames=(len(test_mains) - window_size), interval=100, blit=True)
+
 plt.xlabel('Timestamp')
 plt.ylabel('Power')
 plt.legend()
