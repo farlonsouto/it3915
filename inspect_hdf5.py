@@ -1,5 +1,15 @@
 import h5py
 
+filepath = 'ukdale.h5'
+with h5py.File(filepath, 'r') as f:
+    def print_attrs(name, obj):
+        print(name)
+        for key, val in obj.attrs.items():
+            print(f"    {key}: {val}")
+
+
+    f.visititems(print_attrs)
+
 
 # Open the HDF5 file and inspect the contents of the 'table' dataset
 def inspect_hdf5(filepath):
