@@ -1,14 +1,12 @@
 import pandas as pd
 import hdf5plugin
 import h5py
-import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Conv1D, Input, Flatten, Multiply, Lambda, Add
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from tensorflow.keras.optimizers import Adam
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+
 
 
 # Load and pre-process the data
@@ -81,6 +79,9 @@ def create_tcn_model(input_shape_param, nb_filters=16, kernel_size=4, nb_stacks=
 
 # TODO adjust the hyperparameters: nb_filters, kernel_size, and the number of temporal blocks (nb_stacks), based on the
 #  specific requirements intrinsic to NILM and on the computational resources available (e.g: local machine, one GPU).
+
+print("TensorFlow version:", tf.__version__)
+print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
 window_size = 60
 batch_size = 32
