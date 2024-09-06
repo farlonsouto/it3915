@@ -1,30 +1,12 @@
-import pandas as pd
-import hdf5plugin
-import h5py
 import tensorflow as tf
+import load_data as ld
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Conv1D, Input, Flatten, Multiply, Lambda, Add
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from tensorflow.keras.optimizers import Adam
 
-
-
-# Load and pre-process the data
-def load_data(filepath, building, start_time, end_time):
-    with h5py.File(filepath, 'r') as f:
-        mains_data = f[f'building{building}/elec/meter1/table']
-        index = mains_data['index'][:]
-        values = mains_data['values_block_0'][:]
-        timestamps = pd.to_datetime(index)
-        power = values.flatten()
-        df = pd.DataFrame({'timestamp': timestamps, 'power': power})
-        df = df[(df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)]
-        df.set_index('timestamp', inplace=True)
-        return df
-
-
-train_mains = load_data('ukdale.h5', 1, '2014-01-01', '2015-02-15')
-test_mains = load_data('ukdale.h5', 5, '2014-01-01', '2015-02-15')
+train_mains = ld.load_data('ukdale.h5', 1, '2014-01-01', '2015-02-15')
+test_mains = ld.load_data('ukdale.h5', 5, '2014-01-01', '2015-02-15')
 max_power = train_mains['power'].max()
 train_mains['power'] = train_mains['power'] / max_power
 test_mains['power'] = test_mains['power'] / max_power
