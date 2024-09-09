@@ -46,31 +46,31 @@ def create_seq2point_model(input_shape_param, units=64):
     outputs = Dense(1, activation='linear', dtype=tf.float32)(dense)
 
     # Define the model
-    model = Model(inputs=inputs, outputs=outputs)
-    model.compile(optimizer=Adam(), loss='mse', metrics=['mae'])
+    model_aux = Model(inputs=inputs, outputs=outputs)
+    model_aux.compile(optimizer=Adam(), loss='mse', metrics=['mae'])
 
-    return model
+    return model_aux
 
 
 # Function to create input/output sequences from the data (for Seq2Point)
-def create_seq2point_sequences(df, input_sequence_length):
+def create_seq2point_sequences(df, input_seq_length):
     input_sequences = []
     target_values = []
-    for i in range(len(df) - input_sequence_length):
-        input_seq = df['power'].values[i:i + input_sequence_length]
-        target_value = df['power'].values[i + input_sequence_length]  # Target is the next step value
+    for i in range(len(df) - input_seq_length):
+        input_seq = df['power'].values[i:i + input_seq_length]
+        target_value = df['power'].values[i + input_seq_length]  # Target is the next step value
         input_sequences.append(input_seq)
         target_values.append(target_value)
     return np.array(input_sequences), np.array(target_values)
 
 
 # Normalize the data
-def normalize_data(train_df, test_df):
-    mean = train_df['power'].mean()
-    std = train_df['power'].std()
-    train_df['power'] = (train_df['power'] - mean) / std
-    test_df['power'] = (test_df['power'] - mean) / std
-    return train_df, test_df
+def normalize_data(train_data, test_data):
+    mean = train_data['power'].mean()
+    std = train_data['power'].std()
+    train_data['power'] = (train_data['power'] - mean) / std
+    test_data['power'] = (test_data['power'] - mean) / std
+    return train_data, test_data
 
 
 print("TensorFlow version:", tf.__version__)
@@ -113,7 +113,7 @@ model.summary()
 callbacks = [
     LearningRateScheduler(scheduler),
     EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
-    ModelCheckpoint('best_model_seq2point.keras', save_best_only=True, monitor='val_loss'),
+    ModelCheckpoint('best_seq2point_model.keras', save_best_only=True, monitor='val_loss'),
     TensorBoard(log_dir='./logs')
 ]
 

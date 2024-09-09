@@ -73,7 +73,7 @@ def scheduler(epoch, lr):
 callbacks = [
     LearningRateScheduler(scheduler),
     EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
-    ModelCheckpoint('best_model.keras', save_best_only=True, monitor='val_loss'),
+    ModelCheckpoint('best_tcn_attention_model.keras', save_best_only=True, monitor='val_loss'),
     TensorBoard(log_dir='./logs')
 ]
 
