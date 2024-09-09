@@ -30,14 +30,14 @@ def scheduler(epoch, lr):
 
 
 # Function to create a simplified Seq2Seq model
-def create_simple_seq2seq_model(input_shape_param, output_sequence_length, units=32):
+def create_simple_seq2seq_model(input_shape_param, out_seq_length, units=32):
     # Encoder
     encoder_inputs = Input(shape=input_shape_param, name="encoder_input")
     encoder_outputs, state_h, state_c = LSTM(units, return_state=True)(encoder_inputs)
     encoder_states = [state_h, state_c]
 
     # Decoder
-    decoder_inputs = Input(shape=(output_sequence_length, input_shape_param[1]), name="decoder_input")
+    decoder_inputs = Input(shape=(out_seq_length, input_shape_param[1]), name="decoder_input")
     decoder_lstm = LSTM(units, return_sequences=True)
     decoder_outputs = decoder_lstm(decoder_inputs, initial_state=encoder_states)
 
@@ -109,11 +109,11 @@ test_output_sequences = np.expand_dims(test_output_sequences,
 # Prepare the data as TensorFlow datasets
 train_seq2seq_dataset = tf.data.Dataset.from_tensor_slices(
     ((train_input_sequences, np.zeros_like(train_output_sequences)), train_output_sequences)
-).batch(4)
+).batch(16)
 
 test_seq2seq_dataset = tf.data.Dataset.from_tensor_slices(
     ((test_input_sequences, np.zeros_like(test_output_sequences)), test_output_sequences)
-).batch(4)
+).batch(16)
 
 # Create the Seq2Seq model
 model = create_simple_seq2seq_model(input_shape, output_sequence_length, units=64)
@@ -131,7 +131,7 @@ callbacks = [
 
 # Fit the model using the training data and validate on testing data
 # model.fit(train_seq2seq_dataset, epochs=10, validation_data=test_seq2seq_dataset, callbacks=callbacks)
-model.fit(train_seq2seq_dataset, batch_size=1, epochs=10, validation_data=test_seq2seq_dataset, callbacks=callbacks)
+model.fit(train_seq2seq_dataset, epochs=10, validation_data=test_seq2seq_dataset, callbacks=callbacks)
 
 # Evaluate the model on the testing data
 test_loss, test_mae = model.evaluate(test_seq2seq_dataset)
