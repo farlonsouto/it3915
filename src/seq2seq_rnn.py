@@ -4,7 +4,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler, TensorBoard
 import numpy as np
-from load_data import load_data
+from helper import load_data
 from tensorflow.keras.mixed_precision import set_global_policy, Policy
 from tensorflow.keras import backend as tfk_backend
 
@@ -82,10 +82,10 @@ output_sequence_length = 30
 input_shape = (input_sequence_length, 1)  # Shape of the input sequences
 
 # Load and preprocess training data (Building 1)
-train_df = load_data(filepath='ukdale.h5', building=1, start_time='2014-01-01', end_time='2015-02-15')
+train_df = load_data(filepath='../datasets/ukdale.h5', building=1, start_time='2014-01-01', end_time='2015-02-15')
 
 # Load and preprocess testing data (Building 5)
-test_df = load_data(filepath='ukdale.h5', building=5, start_time='2014-01-01', end_time='2015-02-15')
+test_df = load_data(filepath='../datasets/ukdale.h5', building=5, start_time='2014-01-01', end_time='2015-02-15')
 
 # Normalize data
 train_df, test_df = normalize_data(train_df, test_df)
@@ -125,8 +125,8 @@ model.summary()
 callbacks = [
     LearningRateScheduler(scheduler),
     EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
-    ModelCheckpoint('seq2seq_model.keras', save_best_only=True, monitor='val_loss'),
-    TensorBoard(log_dir='./logs')
+    ModelCheckpoint('../models/seq2seq_model.keras', save_best_only=True, monitor='val_loss'),
+    TensorBoard(log_dir='../logs')
 ]
 
 # Fit the model using the training data and validate on testing data

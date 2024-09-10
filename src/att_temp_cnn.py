@@ -1,5 +1,5 @@
 import tensorflow as tf
-import load_data as ld
+import helper as ld
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Conv1D, Input, Flatten, Multiply, Lambda
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
@@ -7,8 +7,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint, TensorBoard
 
 # Load data
-train_mains = ld.load_data('ukdale.h5', 1, '2014-01-01', '2015-02-15')
-test_mains = ld.load_data('ukdale.h5', 5, '2014-01-01', '2015-02-15')
+train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2015-02-15')
+test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2015-02-15')
 
 # Normalize power values
 max_power = train_mains['power'].max()
@@ -61,6 +61,8 @@ test_generator = TimeseriesGenerator(test_mains_reshaped, test_mains_reshaped, l
 input_shape = (window_size, 1)
 model = create_tcn_model(input_shape)
 
+model.summary()
+
 
 # Define a simple learning rate scheduler
 def scheduler(epoch, lr):
@@ -73,8 +75,8 @@ def scheduler(epoch, lr):
 callbacks = [
     LearningRateScheduler(scheduler),
     EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
-    ModelCheckpoint('att_temp_cnn.keras', save_best_only=True, monitor='val_loss'),
-    TensorBoard(log_dir='./logs')
+    ModelCheckpoint('../models/att_temp_cnn.keras', save_best_only=True, monitor='val_loss'),
+    TensorBoard(log_dir='../logs')
 ]
 
 # Train the model with callbacks

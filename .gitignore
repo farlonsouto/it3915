@@ -1,0 +1,7 @@
+logs/validation/
+logs/train/
+datasets/*.h5
+!logs/.gitkeep
+.idea
+src/__pycache__
+__pycache__/

@@ -1,0 +1,151 @@
+2024-04-03 22:39:08 - [91mUsage: ./setup_spyder.sh <conda_environment_name>[0m
+2024-04-03 22:39:08 - Activating Conda environment ...
+./setup_spyder.sh: line 46: activate: No such file or directory
+2024-04-03 22:39:08 - Step 1: Checking if locate command exists...
+2024-04-03 22:39:08 - [92mlocate command found.[0m
+2024-04-03 22:39:08 - Step 2: Searching for libsoftokn3.so...
+2024-04-03 22:39:08 - [92mlibsoftokn3.so found at: /home/fsouto/anaconda3/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.89.1-h6a678d5_0/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.98-h1d7d5a4_0/lib/libsoftokn3.so
+/snap/firefox/3779/usr/lib/firefox/libsoftokn3.so
+/snap/firefox/3836/usr/lib/firefox/libsoftokn3.so
+/snap/gnome-42-2204/141/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/gnome-42-2204/172/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/575/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/959/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so[0m
+2024-04-03 22:39:08 - Step 3: Checking if necessary dependencies are installed in Conda environment ...
+2024-04-03 22:39:08 - [93mError: Required dependencies not installed in Conda environment . Installing now...[0m
+Channels:
+ - conda-forge
+ - defaults
+ - nilmtk
+ - anaconda
+Platform: linux-64
+Collecting package metadata (repodata.json): ...working... done
+Solving environment: ...working... done
+
+
+==> WARNING: A newer version of conda exists. <==
+    current version: 24.1.2
+    latest version: 24.3.0
+
+Please update conda by running
+
+    $ conda update -n base -c conda-forge conda
+
+
+
+# All requested packages already installed.
+
+2024-04-03 22:39:27 - [92mRequired dependencies installed in Conda environment .[0m
+2024-04-03 22:39:27 - Step 4: Verifying environment variables in Conda environment ...
+2024-04-03 22:39:28 - Error: LD_LIBRARY_PATH not set in Conda environment . Setting it now...
+2024-04-03 22:39:28 - [91mLD_LIBRARY_PATH set to: /home/fsouto/anaconda3/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.89.1-h6a678d5_0/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.98-h1d7d5a4_0/lib/libsoftokn3.so
+/snap/firefox/3779/usr/lib/firefox/libsoftokn3.so
+/snap/firefox/3836/usr/lib/firefox/libsoftokn3.so
+/snap/gnome-42-2204/141/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/gnome-42-2204/172/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/575/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/959/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/usr/lib/x86_64-linux-gnu/nss[0m
+2024-04-03 22:39:28 - Error: QT_PLUGIN_PATH not set in Conda environment . Setting it now...
+2024-04-03 22:39:28 - [91mQT_PLUGIN_PATH set to: /home/fsouto/anaconda3/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.89.1-h6a678d5_0/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.98-h1d7d5a4_0/lib/libsoftokn3.so
+/snap/firefox/3779/usr/lib/firefox/libsoftokn3.so
+/snap/firefox/3836/usr/lib/firefox/libsoftokn3.so
+/snap/gnome-42-2204/141/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/gnome-42-2204/172/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/575/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/959/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/usr/lib/x86_64-linux-gnu/nss/qt/plugins[0m
+2024-04-03 22:39:28 - Step 5: Launching Spyder...
+2024-04-03 22:39:28 - [92mSetup complete. Check spyder_setup.log for details.[0m
+Traceback (most recent call last):
+  File "/home/fsouto/anaconda3/envs/nilmtk-env/bin/spyder", line 11, in <module>
+    sys.exit(main())
+  File "/home/fsouto/anaconda3/envs/nilmtk-env/lib/python3.8/site-packages/spyder/app/start.py", line 253, in main
+    from spyder.app import mainwindow
+  File "/home/fsouto/anaconda3/envs/nilmtk-env/lib/python3.8/site-packages/spyder/app/mainwindow.py", line 57, in <module>
+    from qtpy import QtWebEngineWidgets  # analysis:ignore
+  File "/home/fsouto/anaconda3/envs/nilmtk-env/lib/python3.8/site-packages/qtpy/QtWebEngineWidgets.py", line 28, in <module>
+    from PyQt5.QtWebEngineWidgets import (
+ImportError: libsoftokn3.so: cannot open shared object file: No such file or directory
+2024-04-03 22:39:43 - Activating Conda environment nilmtk-env...
+./setup_spyder.sh: line 46: activate: No such file or directory
+2024-04-03 22:39:43 - Step 1: Checking if locate command exists...
+2024-04-03 22:39:43 - [92mlocate command found.[0m
+2024-04-03 22:39:43 - Step 2: Searching for libsoftokn3.so...
+2024-04-03 22:39:43 - [92mlibsoftokn3.so found at: /home/fsouto/anaconda3/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.89.1-h6a678d5_0/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.98-h1d7d5a4_0/lib/libsoftokn3.so
+/snap/firefox/3779/usr/lib/firefox/libsoftokn3.so
+/snap/firefox/3836/usr/lib/firefox/libsoftokn3.so
+/snap/gnome-42-2204/141/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/gnome-42-2204/172/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/575/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/959/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so[0m
+2024-04-03 22:39:43 - Step 3: Checking if necessary dependencies are installed in Conda environment nilmtk-env...
+2024-04-03 22:39:43 - [93mError: Required dependencies not installed in Conda environment nilmtk-env. Installing now...[0m
+Channels:
+ - conda-forge
+ - defaults
+ - nilmtk
+ - anaconda
+Platform: linux-64
+Collecting package metadata (repodata.json): ...working... done
+Solving environment: ...working... done
+
+
+==> WARNING: A newer version of conda exists. <==
+    current version: 24.1.2
+    latest version: 24.3.0
+
+Please update conda by running
+
+    $ conda update -n base -c conda-forge conda
+
+
+
+# All requested packages already installed.
+
+2024-04-03 22:40:02 - [92mRequired dependencies installed in Conda environment nilmtk-env.[0m
+2024-04-03 22:40:02 - Step 4: Verifying environment variables in Conda environment ...
+2024-04-03 22:40:02 - Error: LD_LIBRARY_PATH not set in Conda environment . Setting it now...
+2024-04-03 22:40:02 - [91mLD_LIBRARY_PATH set to: /home/fsouto/anaconda3/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.89.1-h6a678d5_0/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.98-h1d7d5a4_0/lib/libsoftokn3.so
+/snap/firefox/3779/usr/lib/firefox/libsoftokn3.so
+/snap/firefox/3836/usr/lib/firefox/libsoftokn3.so
+/snap/gnome-42-2204/141/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/gnome-42-2204/172/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/575/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/959/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/usr/lib/x86_64-linux-gnu/nss[0m
+2024-04-03 22:40:02 - Error: QT_PLUGIN_PATH not set in Conda environment . Setting it now...
+2024-04-03 22:40:02 - [91mQT_PLUGIN_PATH set to: /home/fsouto/anaconda3/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.89.1-h6a678d5_0/lib/libsoftokn3.so
+/home/fsouto/anaconda3/pkgs/nss-3.98-h1d7d5a4_0/lib/libsoftokn3.so
+/snap/firefox/3779/usr/lib/firefox/libsoftokn3.so
+/snap/firefox/3836/usr/lib/firefox/libsoftokn3.so
+/snap/gnome-42-2204/141/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/gnome-42-2204/172/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/575/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/snap/snap-store/959/usr/lib/x86_64-linux-gnu/nss/libsoftokn3.so
+/usr/lib/x86_64-linux-gnu/nss/qt/plugins[0m
+2024-04-03 22:40:02 - Step 5: Launching Spyder...
+2024-04-03 22:40:02 - [92mSetup complete. Check spyder_setup.log for details.[0m
+Traceback (most recent call last):
+  File "/home/fsouto/anaconda3/envs/nilmtk-env/bin/spyder", line 11, in <module>
+    sys.exit(main())
+  File "/home/fsouto/anaconda3/envs/nilmtk-env/lib/python3.8/site-packages/spyder/app/start.py", line 253, in main
+    from spyder.app import mainwindow
+  File "/home/fsouto/anaconda3/envs/nilmtk-env/lib/python3.8/site-packages/spyder/app/mainwindow.py", line 57, in <module>
+    from qtpy import QtWebEngineWidgets  # analysis:ignore
+  File "/home/fsouto/anaconda3/envs/nilmtk-env/lib/python3.8/site-packages/qtpy/QtWebEngineWidgets.py", line 28, in <module>
+    from PyQt5.QtWebEngineWidgets import (
+ImportError: libsoftokn3.so: cannot open shared object file: No such file or directory

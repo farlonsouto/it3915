@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import hdf5plugin
 import h5py
@@ -15,3 +17,9 @@ def load_data(filepath, building, start_time, end_time):
         df = df[(df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)]
         df.set_index('timestamp', inplace=True)
         return df
+
+
+# Function to get the current date and time as a string
+def datetime_string():
+    return datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+

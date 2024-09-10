@@ -1,0 +1,143 @@
+{'year_of_purchase': 2007, 'original_name': 'dishwasher', 'instance': 1, 'min_on_duration': 1800, 'max_power': 2500, 'meters': [6], 'model': 'DWH B10', 'on_power_threshold': 10, 'type': 'dish washer', 'min_off_duration': 1800, 'manufacturer': 'Whirlpool / Ikea', 'room': 'kitchen', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='soldering iron', instance=1)
+{'description': 'temperature controlled', 'original_name': 'soldering_iron', 'instance': 1, 'meters': [20], 'model': '168-3CD', 'year_of_purchase': 2011, 'type': 'soldering iron', 'manufacturer': 'Xytronic', 'room': 'study', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='fan', instance=1)
+{'subtype': 'desk', 'meters': [52], 'room': 'study', 'instance': 1, 'type': 'fan', 'original_name': 'office_fan', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='laptop computer', instance=1)
+{'room': 'study', 'nominal_consumption': {'on_power': 70}, 'original_name': 'laptop', 'instance': 1, 'meters': [4], 'components': [{'display_technology': 'LCD', 'type': 'flat screen', 'max_resolution': {'horizontal': 1600, 'vertical': 900}, 'diagonal_size': 14.0}], 'model': '6450b', 'manufacturer': 'HP', 'type': 'laptop computer', 'cpu': 'Intel(R) Core(TM) i5 CPU M450 2.40GHz', 'year_of_purchase': 2010, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='toaster', instance=1)
+{'dominant_appliance': True, 'room': 'kitchen', 'original_name': 'toaster', 'instance': 1, 'meters': [11], 'on_power_threshold': 1000, 'type': 'toaster', 'year_of_purchase': 2009, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='ethernet switch', instance=1)
+{'subtype': '1gigabit', 'meters': [21], 'room': 'study', 'instance': 1, 'type': 'ethernet switch', 'original_name': 'gigE_&_USBhub', 'year_of_purchase': 2008, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='audio system', instance=2)
+{'instance': 2, 'meters': [32], 'description': 'mostly used as an amp for iPods', 'room': 'kitchen', 'type': 'audio system', 'original_name': 'kitchen_phone&stereo', 'year_of_purchase': 2009, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='external hard disk', instance=1)
+{'instance': 1, 'meters': [43], 'description': 'external disk used every few months to transfer data from data logging PC', 'room': 'hall', 'type': 'external hard disk', 'original_name': 'data_logger_pc', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='broadband router', instance=2)
+{'room': 'hall', 'original_name': 'adsl_router', 'instance': 2, 'meters': [18], 'dates_active': [{'start': '2016-01-20T11:30:40+00:00'}], 'model': 'Super Hub 3 / VMDG505 TG2492LG-VM', 'manufacturer': 'Virgin Media / Arris', 'type': 'broadband router', 'year_of_purchase': 2016, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=1)
+{'main_room_light': True, 'description': 'the new, efficient kitchen ceiling lights.  Prior to 2013-04-25 we used incandescent lamps.  The kitchen receives very little natural light hence the kitchen lights are used a lot.', 'instance': 1, 'nominal_consumption': {'on_power': 100}, 'original_name': 'kitchen_lights', 'subtype': 'ceiling downlight', 'meters': [8], 'components': [{'count': 10, 'model': 'Dimmable MASTER LED 10W MR16 GU5.3 24degrees 2700K 12v', 'nominal_consumption': {'on_power': 10}, 'type': 'LED lamp', 'manufacturer': 'Philips'}, {'subtype': 'TRIAC', 'type': 'dimmer'}], 'dates_active': [{'start': '2013-04-25T08:00:00+01:00'}], 'type': 'light', 'room': 'kitchen', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='microwave', instance=1)
+{'room': 'kitchen', 'original_name': 'microwave', 'instance': 1, 'min_on_duration': 12, 'max_power': 3000, 'meters': [13], 'on_power_threshold': 200, 'type': 'microwave', 'min_off_duration': 30, 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=4)
+{'room': 'kitchen', 'instance': 4, 'original_name': 'kitchen_dt_lamp', 'subtype': 'table', 'meters': [23], 'components': [{'type': 'incandescent lamp'}, {'type': 'dimmer', 'number_of_dimmer_levels': 3}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='drill', instance=1)
+{'instance': 1, 'type': 'drill', 'meters': [0], 'year_of_purchase': 2009, 'description': 'Used: Sat 13/04/2013 17:43 BST for one short burst.  And other times, not logged.', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=7)
+{'description': 'throws light onto the wall behind the television', 'instance': 7, 'original_name': 'livingroom_lamp_tv', 'subtype': 'mood', 'meters': [29], 'components': [{'type': 'compact fluorescent lamp'}], 'room': 'lounge', 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=13)
+{'room': 'study', 'instance': 13, 'original_name': 'office_lamp1', 'subtype': 'mood', 'meters': [48], 'components': [{'type': 'compact fluorescent lamp'}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='radio', instance=1)
+{'description': 'this DAB radio was only in the lounge when we first had it.  Then it was moved to bedroom 1 and was put on an IAM with a bunch of other low-power appliances.', 'instance': 1, 'original_name': 'DAB_radio_livingroom', 'subtype': 'DAB', 'meters': [30], 'room': 'lounge', 'type': 'radio', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='tablet computer charger', instance=1)
+{'instance': 1, 'meters': [27], 'room': 'lounge', 'type': 'tablet computer charger', 'manufacturer': 'Apple', 'original_name': 'iPad_charger', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=16)
+{'count': 9, 'instance': 16, 'meters': [25], 'description': 'all the lights on the lighting circuit.  Mostly undimmable CFLs.  One dimmable LED.  One dimmable incandescent.', 'type': 'light', 'original_name': 'lighting_circuit', 'categories': {'electrical': ['incandescent', 'fluorescent', 'compact', 'LED']}, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=10)
+{'description': 'This light was not plugged into its submeter for a few months.  Instead the little DAB radio in the bedroom was plugged into this submeter.  This was fixed (and the light was reconnected with its submeter) on 2014-11-30 around 18:30.', 'instance': 10, 'original_name': 'bedroom_d_lamp', 'subtype': 'table', 'meters': [35], 'components': [{'type': 'incandescent lamp'}, {'type': 'dimmer', 'number_of_dimmer_levels': 3}], 'room': 'bedroom,1', 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='charger', instance=1)
+{'instance': 1, 'meters': [47], 'description': 'for charging misc batteries (e.g. AA and AAA batteries)', 'room': 'study', 'type': 'charger', 'original_name': 'battery_charger', 'year_of_purchase': 2008, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='food processor', instance=1)
+{'instance': 1, 'meters': [10], 'room': 'kitchen', 'type': 'food processor', 'manufacturer': 'Breville', 'original_name': 'kettle', 'year_of_purchase': 2007, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='boiler', instance=1)
+{'description': 'includes all electronics associated with the boiler including the central heating pump, the hot water pump, the bathroom underfloor heating pump, the boiler controller, the boiler itself. Over winter the central heating is on 24 hrs and is controlled by our portable wireless thermostat which is usually set at 18-20 degrees C and is put in the room we want to be the most comfortable. Prior to 3rd May 2013, the hot water was set to come on from 0630-0700 and 1630-1700.  After 3rd May the HW comes on 0650-0700 and 1650-1700.', 'subtype': 'system', 'distributions': {'on_power': [{'model': {'mu': 73, 'sigma': 12, 'distribution_name': 'normal'}}]}, 'nominal_consumption': {'on_power': 70}, 'original_name': 'boiler', 'efficiency_rating': {'rating': 'A', 'certification_name': 'SEDBUK'}, 'instance': 1, 'part_number': '41-311-71', 'meters': [2], 'fuel': 'natural gas', 'model': '30CDi Conventional natural gas', 'year_of_purchase': 2011, 'type': 'boiler', 'manufacturer': 'Worcester~Greenstar', 'room': 'bathroom', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='solar thermal pumping station', instance=1)
+{'description': 'includes all electronics associated with the evacuated-tube solar hot water system including the water pump and control electronics.  The temperature difference controller is model STDC manufactured by Navitron', 'nominal_consumption': {'on_power': 43}, 'original_name': 'solar_thermal_pump', 'instance': 1, 'meters': [3], 'model': 'Solar Thermal Pumping Station', 'year_of_purchase': 2011, 'type': 'solar thermal pumping station', 'manufacturer': 'Navitron', 'room': 'bathroom', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='bouncy castle pump', instance=1)
+{'instance': 1, 'meters': [19], 'description': 'bouncy castle pump plugged into this meter instead of lamp on 7th June 2015', 'type': 'bouncy castle pump', 'dates_active': [{'start': '2015-06-07T07:01:01+01:00', 'end': '2015-06-07T18:59:01+01:00'}], 'original_name': 'livingroom_s_lamp', 'room': 'outdoors', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='water pump', instance=1)
+{'instance': 1, 'meters': [0], 'year_of_purchase': 2010, 'description': 'Very efficient under-floor heating water pump.  Uses about 5 watts when running.', 'type': 'water pump', 'room': 'lounge', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='mobile phone charger', instance=2)
+{'year_of_purchase': 2012, 'on_power_threshold': 1, 'original_name': 'bedroom_chargers', 'instance': 2, 'meters': [38], 'manufacturer': 'Apple', 'type': 'mobile phone charger', 'room': 'bedroom,1', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='audio system', instance=1)
+{'instance': 1, 'meters': [15], 'room': 'study', 'components': [{'type': 'audio amplifier', 'year_of_purchase': 2012, 'components': [{'type': 'DAC'}]}, {'subtype': 'analogue', 'type': 'radio', 'year_of_purchase': 1995}, {'type': 'CD player', 'year_of_purchase': 1995}], 'type': 'audio system', 'original_name': 'hifi_office', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='coffee maker', instance=1)
+{'instance': 1, 'meters': [36], 'year_of_purchase': 2010, 'type': 'coffee maker', 'original_name': 'coffee_machine', 'room': 'kitchen', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='immersion heater', instance=1)
+{'instance': 1, 'meters': [0], 'year_of_purchase': 2012, 'description': 'It has never been used and would only ever be used if the boiler broke.', 'type': 'immersion heater', 'room': 'bathroom', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='hair dryer', instance=1)
+{'instance': 1, 'meters': [39], 'year_of_purchase': 2013, 'type': 'hair dryer', 'original_name': 'hair_dryer', 'room': 'bedroom,1', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='laptop computer', instance=3)
+{'instance': 3, 'meters': [4], 'description': 'On loan from company for 3 months whilst doing a project with them.', 'type': 'laptop computer', 'dates_active': [{'start': '2014-07-14T00:00:00+01:00', 'end': '2014-10-24T23:59:59+01:00'}], 'original_name': 'laptop', 'manufacturer': 'Lenovo', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='broadband router', instance=1)
+{'instance': 1, 'meters': [18], 'room': 'hall', 'type': 'broadband router', 'dates_active': [{'end': '2016-01-20T11:30:19+00:00'}], 'original_name': 'adsl_router', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='baby monitor', instance=2)
+{'room': 'bedroom,1', 'instance': 2, 'original_name': 'bedroom_chargers', 'subtype': 'parent unit', 'meters': [38], 'on_power_threshold': 1, 'type': 'baby monitor', 'year_of_purchase': 2011, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='clothes iron', instance=1)
+{'instance': 1, 'meters': [41], 'year_of_purchase': 2006, 'type': 'clothes iron', 'original_name': 'iron', 'room': 'bedroom,1', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=6)
+{'room': 'lounge', 'instance': 6, 'original_name': 'livingroom_s_lamp2', 'subtype': 'floor standing', 'meters': [26], 'components': [{'type': 'compact fluorescent lamp'}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='toasted sandwich maker', instance=1)
+{'instance': 1, 'meters': [10], 'year_of_purchase': 2007, 'type': 'toasted sandwich maker', 'original_name': 'kettle', 'room': 'kitchen', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='HTPC', instance=1)
+{'year_of_purchase': 2008, 'description': 'home theatre PC. The only AV source for the TV. Also turns itself on to record FreeView programs. Also used for playing music occasionally.', 'original_name': 'htpc', 'instance': 1, 'meters': [9], 'on_power_threshold': 20, 'type': 'HTPC', 'room': 'lounge', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=3)
+{'description': 'bouncy castle pump plugged into this meter instead of lamp on 7th June 2015', 'instance': 3, 'original_name': 'livingroom_s_lamp', 'subtype': 'floor standing', 'meters': [19], 'components': [{'type': 'compact fluorescent lamp'}], 'room': 'lounge', 'dates_active': [{'end': '2015-06-07T07:00:01+01:00'}, {'start': '2015-06-07T19:00:01+01:00'}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=9)
+{'instance': 9, 'meters': [33], 'room': 'utility', 'components': [{'type': 'linear fluorescent lamp'}], 'type': 'light', 'original_name': 'utilityrm_lamp', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='hair straighteners', instance=1)
+{'instance': 1, 'meters': [40], 'year_of_purchase': 2006, 'type': 'hair straighteners', 'original_name': 'straighteners', 'room': 'bedroom,1', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='washer dryer', instance=2)
+{'model_url': 'http://www.samsung.com/uk/consumer/home-appliances/laundry/washing-machine/WF80F5E5U4X/EU', 'description': 'F500 washing machine with ecobubble, 8 kg', 'nominal_consumption': {'energy_per_year': 157}, 'efficiency_rating': {'rating': 'A+++', 'certification_name': 'SEDBUK'}, 'dates_active': [{'start': '2015-09-08T00:00:01+01:00'}], 'manufacturer': 'Samsung', 'year_of_purchase': 2015, 'room': 'utility', 'original_name': 'washing_machine', 'instance': 2, 'min_on_duration': 1800, 'max_power': 2500, 'meters': [5], 'model': 'wf80f5e5u4x', 'on_power_threshold': 20, 'type': 'washer dryer', 'min_off_duration': 160, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='radio', instance=3)
+{'room': 'bedroom,1', 'instance': 3, 'original_name': 'bedroom_chargers', 'subtype': 'DAB', 'meters': [38], 'on_power_threshold': 1, 'type': 'radio', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='oven', instance=1)
+{'room': 'kitchen', 'original_name': 'gas_oven', 'instance': 1, 'meters': [42], 'fuel': 'natural gas', 'on_power_threshold': 10, 'type': 'oven', 'year_of_purchase': 2000, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=12)
+{'description': 'Prior to around 1st April 2013 it was a dimmable CFL.  But that blew so we changed to a 75W incandesent for a little while.  Then on 10th April 2013 we changed it to a Philips MASTER LEDBULB 8W dimmable.  This information has not been modelled in this schema, but it could be.', 'instance': 12, 'original_name': 'childs_ds_lamp', 'subtype': 'floor standing', 'meters': [45], 'components': [{'type': 'LED lamp'}, {'type': 'dimmer'}], 'room': 'bedroom,2', 'type': 'light', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=15)
+{'room': 'study', 'instance': 15, 'original_name': 'office_lamp3', 'subtype': 'table', 'meters': [50], 'components': [{'type': 'compact fluorescent lamp'}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='fridge freezer', instance=1)
+{'room': 'kitchen', 'instance': 1, 'original_name': 'fridge', 'subtype': 'fridge on top', 'min_on_duration': 60, 'max_power': 300, 'meters': [12], 'on_power_threshold': 50, 'type': 'fridge freezer', 'min_off_duration': 12, 'year_of_purchase': 2010, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='security alarm', instance=1)
+{'instance': 1, 'meters': [0], 'description': 'Always on.  Appears to use about 10 watts.  Was turned off Sunday 11th August 2013', 'room': 'hall', 'dates_active': [{'end': '2013-08-11'}], 'type': 'security alarm', 'year_of_purchase': 2008, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='mobile phone charger', instance=1)
+{'instance': 1, 'meters': [34], 'room': 'bedroom,1', 'type': 'mobile phone charger', 'manufacturer': 'Samsung', 'original_name': 'samsung_charger', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='fan', instance=2)
+{'subtype': 'single-room MVHR', 'meters': [0], 'description': 'Bathroom extractor fan (MVHR). On for most of the time during winter months (in summer we turn the fan off and open the window). Has 2 modes: trickle and boost.  Boost is triggered using a manual pull-cord when necessary. Only uses about 2 watts in trickle mode and about 10 watts in boost mode.', 'instance': 2, 'room': 'bathroom', 'type': 'fan', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='laptop computer', instance=2)
+{'instance': 2, 'meters': [0], 'year_of_purchase': 2012, 'description': 'Charged 09:21 BST Sat 4th May 2013 and lots of other times subsequently.', 'type': 'laptop computer', 'manufacturer': 'Dell', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='wireless phone charger', instance=1)
+{'instance': 1, 'meters': [32], 'year_of_purchase': 2009, 'type': 'wireless phone charger', 'original_name': 'kitchen_phone&stereo', 'room': 'kitchen', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='baby monitor', instance=1)
+{'subtype': 'baby unit', 'meters': [46], 'room': 'bedroom,2', 'instance': 1, 'type': 'baby monitor', 'original_name': 'baby_monitor_tx', 'year_of_purchase': 2011, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='kettle', instance=1)
+{'dominant_appliance': True, 'room': 'kitchen', 'original_name': 'kettle', 'instance': 1, 'min_on_duration': 12, 'max_power': 3100, 'meters': [10], 'on_power_threshold': 2000, 'type': 'kettle', 'min_off_duration': 0, 'year_of_purchase': 2007, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='breadmaker', instance=1)
+{'instance': 1, 'meters': [16], 'year_of_purchase': 2010, 'type': 'breadmaker', 'original_name': 'breadmaker', 'room': 'kitchen', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='computer monitor', instance=1)
+{'instance': 1, 'meters': [14], 'room': 'study', 'components': [{'display_technology': 'LCD', 'type': 'flat screen', 'diagonal_size': 24, 'manufacturer': 'Dell'}], 'type': 'computer monitor', 'original_name': 'lcd_office', 'year_of_purchase': 2010, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=2)
+{'main_room_light': True, 'description': 'the old, inefficient kitchen ceiling lights.  After 2013-04-25 we used LED lamps. The kitchen receives very little natural light hence the kitchen lights are used a lot.   5th April 2013 1450 BST: replaced 1x50W halogen with 10W 12V Philips dimmable LED. 10th April 2013: replaced 1x50W halogen with 8W 12V MegaMan Dimmable LED. 25th April 2013 0800 BST: all 10 light fittings are now 10W 12V Philips dimmable LEDs.', 'instance': 2, 'nominal_consumption': {'on_power': 500}, 'original_name': 'kitchen_lights', 'subtype': 'ceiling downlight', 'meters': [8], 'components': [{'count': 10, 'subtype': 'halogen', 'nominal_consumption': {'on_power': 50}, 'type': 'incandescent lamp'}, {'subtype': 'TRIAC', 'type': 'dimmer'}], 'dates_active': [{'end': '2013-04-25T07:59:00+01:00'}], 'type': 'light', 'room': 'kitchen', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=8)
+{'room': 'kitchen', 'instance': 8, 'original_name': 'kitchen_lamp2', 'subtype': 'floor standing', 'meters': [31], 'components': [{'type': 'compact fluorescent lamp'}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='audio amplifier', instance=1)
+{'instance': 1, 'meters': [17], 'year_of_purchase': 2004, 'type': 'audio amplifier', 'original_name': 'amp_livingroom', 'room': 'lounge', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='USB hub', instance=1)
+{'instance': 1, 'meters': [21], 'year_of_purchase': 2008, 'type': 'USB hub', 'original_name': 'gigE_&_USBhub', 'room': 'study', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=5)
+{'room': 'bedroom,1', 'instance': 5, 'original_name': 'bedroom_ds_lamp', 'subtype': 'floor standing', 'meters': [24], 'components': [{'type': 'incandescent lamp'}, {'subtype': 'TRIAC', 'type': 'dimmer'}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='radio', instance=2)
+{'room': 'kitchen', 'instance': 2, 'original_name': 'kitchen_radio', 'subtype': 'analogue', 'meters': [37], 'on_power_threshold': 2, 'type': 'radio', 'year_of_purchase': 2004, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=11)
+{'room': 'bedroom,2', 'instance': 11, 'original_name': 'childs_table_lamp', 'subtype': 'table', 'meters': [44], 'components': [{'type': 'incandescent lamp'}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='desktop computer', instance=1)
+{'instance': 1, 'meters': [51], 'year_of_purchase': 2007, 'type': 'desktop computer', 'original_name': 'office_pc', 'room': 'study', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='kitchen aid', instance=1)
+{'instance': 1, 'meters': [11], 'room': 'kitchen', 'type': 'kitchen aid', 'manufacturer': 'Artisan', 'original_name': 'toaster', 'year_of_purchase': 2009, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='light', instance=14)
+{'room': 'study', 'instance': 14, 'original_name': 'office_lamp2', 'subtype': 'mood', 'meters': [49], 'components': [{'type': 'compact fluorescent lamp'}], 'type': 'light', 'year_of_purchase': 2006, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='washer dryer', instance=1)
+{'year_of_purchase': 2007, 'brand': 'Aquarius', 'original_name': 'washing_machine', 'instance': 1, 'meters': [5], 'min_on_duration': 1800, 'max_power': 2500, 'dates_active': [{'end': '2015-09-08T00:00:00+01:00'}], 'model': 'WD420 1200 spin', 'on_power_threshold': 20, 'type': 'washer dryer', 'min_off_duration': 160, 'manufacturer': 'Hotpoint', 'room': 'utility', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='television', instance=1)
+{'year_of_manufacture': 2001, 'room': 'lounge', 'instance': 1, 'original_name': 'tv', 'integrated_av_sources': ['analogue TV tuner'], 'meters': [7], 'components': [{'display_format': 'PAL', 'type': 'CRT screen', 'diagonal_size': 34}], 'on_power_threshold': 10, 'type': 'television', 'manufacturer': 'Panasonic', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='computer', instance=1)
+{'control': ['always on'], 'dominant_appliance': True, 'description': 'data logging PC', 'do_not_inherit': ['control'], 'original_name': 'data_logger_pc', 'instance': 1, 'meters': [43], 'room': 'hall', 'type': 'computer', 'cpu': 'Intel Atom', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='printer', instance=1)
+{'subtype': 'LED', 'meters': [53], 'room': 'study', 'instance': 1, 'type': 'printer', 'original_name': 'LED_printer', 'year_of_purchase': 2012, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='vacuum cleaner', instance=1)
+{'instance': 1, 'meters': [22], 'original_name': 'hoover', 'year_of_purchase': 2008, 'type': 'vacuum cleaner', 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='food processor', instance=2)
+{'instance': 2, 'meters': [11], 'room': 'kitchen', 'type': 'food processor', 'manufacturer': 'Kenwood', 'original_name': 'toaster', 'year_of_purchase': 2009, 'dataset': 'UK-DALE', 'building': 1}
+Metadata for appliance: Appliance(type='active subwoofer', instance=1)
+{'instance': 1, 'meters': [28], 'year_of_purchase': 2003, 'type': 'active subwoofer', 'original_name': 'subwoofer_livingroom', 'room': 'lounge', 'dataset': 'UK-DALE', 'building': 1}
