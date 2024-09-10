@@ -4,6 +4,7 @@ from tensorflow.keras.layers import Input, Dense, LayerNormalization, MultiHeadA
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from tensorflow.keras.optimizers import Adam
 import load_data as ld
+from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint, TensorBoard
 
 # Load and preprocess data
 train_mains = ld.load_data('ukdale.h5', 1, '2014-01-01', '2015-02-15')
@@ -16,7 +17,7 @@ test_mains['power'] = test_mains['power'] / max_power
 
 
 # Define Transformer block
-def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
+def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0.0):
     # Multi-head Self Attention
     attention_output = MultiHeadAttention(num_heads=num_heads, key_dim=head_size, dropout=dropout)(inputs, inputs)
     attention_output = Add()([inputs, attention_output])
@@ -33,8 +34,8 @@ def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
 
 
 # Define the Transformer model for NILM
-def create_transformer_model(input_shape, head_size=64, num_heads=4, ff_dim=128, num_transformer_blocks=4, dropout=0.1):
-    inputs = Input(shape=input_shape)
+def create_transformer_model(shape_of_input, head_size=64, num_heads=4, ff_dim=128, num_transformer_blocks=4, dropout=0.1):
+    inputs = Input(shape=shape_of_input)
 
     x = inputs
     for _ in range(num_transformer_blocks):
@@ -70,8 +71,25 @@ test_generator = TimeseriesGenerator(test_mains_reshaped, test_mains_reshaped,
 input_shape = (window_size, 1)
 transformer_model = create_transformer_model(input_shape)
 
+
+# Define a simple learning rate scheduler
+def scheduler(epoch, lr):
+    if epoch > 5:
+        return lr * 0.5
+    return lr
+
+
+# Define callbacks for learning rate scheduling, early stopping, model checkpointing, and TensorBoard logging
+callbacks = [
+    LearningRateScheduler(scheduler),
+    EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
+    ModelCheckpoint('transformer_model.keras', save_best_only=True, monitor='val_loss'),
+    TensorBoard(log_dir='./logs')
+]
+
 # Train the model
 transformer_model.fit(train_generator, epochs=10, validation_data=test_generator)
+
 
 # Evaluate the model
 loss, mae = transformer_model.evaluate(test_generator)
