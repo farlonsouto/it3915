@@ -7,8 +7,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint, TensorBoard
 
 # Load data
-train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2015-02-15')
-test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2015-02-15')
+train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2014-09-01')
+test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2014-09-01')
 
 # Normalize power values
 max_power = train_mains['power'].max()
@@ -21,7 +21,10 @@ def attention_block(inputs):
     attention = Dense(1, activation='tanh')(inputs)
     attention = Flatten()(attention)
     attention = Dense(inputs.shape[1], activation='softmax')(attention)
-    attention = Lambda(lambda x: tf.expand_dims(x, axis=-1))(attention)
+
+    # Specifying the output shape, because it will be critical when loading the model back
+    attention = Lambda(lambda x: tf.expand_dims(x, axis=-1), output_shape=lambda s: (s[0], s[1], 1))(attention)
+
     return Multiply()([inputs, attention])
 
 
@@ -75,12 +78,14 @@ def scheduler(epoch, lr):
 callbacks = [
     LearningRateScheduler(scheduler),
     EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
-    ModelCheckpoint('../models/att_temp_cnn.keras', save_best_only=True, monitor='val_loss'),
+ #   ModelCheckpoint('../models/latest_att_temp_cnn.keras', save_best_only=True, monitor='val_loss'),
     TensorBoard(log_dir='../logs')
 ]
 
 # Train the model with callbacks
 model.fit(train_generator, epochs=10, validation_data=test_generator, callbacks=callbacks)
+
+model.save('../models/latest_att_temp_cnn.keras')
 
 # Evaluate the model
 loss, mae = model.evaluate(test_generator)
