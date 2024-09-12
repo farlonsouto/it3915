@@ -1,28 +1,27 @@
 import h5py
 
-filepath = 'ukdale.h5'
-with h5py.File(filepath, 'r') as f:
-    def print_attrs(name, obj):
-        print(name)
-        for key, val in obj.attrs.items():
-            print(f"    {key}: {val}")
+# Path to the dataset
+dataset_path = '../datasets/ukdale.h5'
 
 
-    f.visititems(print_attrs)
-
-
-# Open the HDF5 file and inspect the contents of the 'table' dataset
-def inspect_hdf5(filepath):
+# Function to inspect the structure of the dataset
+def inspect_dataset(filepath):
     with h5py.File(filepath, 'r') as f:
-        table = f['building1/elec/meter1/table']
-        print("Table dtype:", table.dtype)
-        print("Table shape:", table.shape)
-        print("Table attributes:", list(table.attrs.keys()))
+        # Recursively explore the structure of the file
+        def explore_group(group, indent=0):
+            for key in group.keys():
+                item = group[key]
+                if isinstance(item, h5py.Group):
+                    print(f'{"  " * indent}Group: {key}')
+                    explore_group(item, indent + 1)  # Recursively explore this group
+                elif isinstance(item, h5py.Dataset):
+                    print(f'{"  " * indent}Dataset: {key}, Shape: {item.shape}, Dtype: {item.dtype}')
+                else:
+                    print(f'{"  " * indent}Unknown: {key}')
 
-        # Read the first few rows in smaller chunks
-        for i in range(5):
-            print(f"Row {i}: {table[i]}")
+        print("Inspecting dataset structure...")
+        explore_group(f)
 
 
-# Inspect the datasets within the 'table' group
-inspect_hdf5('ukdale.h5')
+# Call the inspection function
+inspect_dataset(dataset_path)

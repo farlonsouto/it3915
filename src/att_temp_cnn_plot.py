@@ -3,10 +3,11 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
+import keras
 
 import helper as ld
 
-tf.keras.config.enable_unsafe_deserialization()
+keras.config.enable_unsafe_deserialization()
 
 
 # Define the Lambda layer function with tf inside
@@ -22,7 +23,7 @@ my_custom_objects = {
 }
 
 # Load model and pass custom_objects that ensure 'tf' is included
-model = tf.keras.models.load_model('../models/latest_att_temp_cnn.keras', custom_objects=my_custom_objects,
+model = keras.models.load_model('../models/latest_att_temp_cnn.keras', custom_objects=my_custom_objects,
                                    compile=True, safe_mode=True)
 
 model.summary()

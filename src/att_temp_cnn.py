@@ -7,8 +7,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint, TensorBoard
 
 # Load data
-train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2014-09-01')
-test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2014-09-01')
+train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2014-07-01')
+test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2014-07-01')
 
 # Normalize power values
 max_power = train_mains['power'].max()
@@ -18,12 +18,13 @@ test_mains['power'] = test_mains['power'] / max_power
 
 # Define the Attention and TCN models
 def attention_block(inputs):
+    import tensorflow as tflow
     attention = Dense(1, activation='tanh')(inputs)
     attention = Flatten()(attention)
     attention = Dense(inputs.shape[1], activation='softmax')(attention)
 
     # Specifying the output shape, because it will be critical when loading the model back
-    attention = Lambda(lambda x: tf.expand_dims(x, axis=-1), output_shape=lambda s: (s[0], s[1], 1))(attention)
+    attention = Lambda(lambda x: tflow.expand_dims(x, axis=-1), output_shape=lambda s: (s[0], s[1], 1))(attention)
 
     return Multiply()([inputs, attention])
 
@@ -49,8 +50,8 @@ def create_tcn_model(input_shape_param, nb_filters=16, kernel_size=4, nb_stacks=
 
 
 # Prepare data generators
-window_size = 60
-batch_size = 32
+window_size = 15
+batch_size = 8
 
 train_mains_reshaped = train_mains['power'].values.reshape(-1, 1)
 test_mains_reshaped = test_mains['power'].values.reshape(-1, 1)
