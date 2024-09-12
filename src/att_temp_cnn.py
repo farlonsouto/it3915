@@ -7,8 +7,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint, TensorBoard
 
 # Load data
-train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2014-07-01')
-test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2014-07-01')
+train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2015-02-15')
+test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2015-02-15')
 
 # Normalize power values
 max_power = train_mains['power'].max()
@@ -79,7 +79,7 @@ def scheduler(epoch, lr):
 callbacks = [
     LearningRateScheduler(scheduler),
     EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
- #   ModelCheckpoint('../models/latest_att_temp_cnn.keras', save_best_only=True, monitor='val_loss'),
+    #   ModelCheckpoint('../models/latest_att_temp_cnn.keras', save_best_only=True, monitor='val_loss'),
     TensorBoard(log_dir='../logs')
 ]
 
