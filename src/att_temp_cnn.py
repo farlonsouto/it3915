@@ -5,6 +5,7 @@ from tensorflow.keras.layers import Dense, Conv1D, Input, Flatten, Multiply, Lam
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint, TensorBoard
+from tensorflow.keras.layers import Dense, Flatten, Multiply, Reshape
 
 # Load data
 train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2015-02-15')
@@ -17,16 +18,25 @@ test_mains['power'] = test_mains['power'] / max_power
 
 
 # Define the Attention and TCN models
+
+
 def attention_block(inputs):
-    import tensorflow as tflow
+    # Step 1: Calculate attention scores with a Dense layer and tanh activation
     attention = Dense(1, activation='tanh')(inputs)
+
+    # Step 2: Flatten the attention scores to (batch_size, sequence_length)
     attention = Flatten()(attention)
+
+    # Step 3: Apply a Dense layer with softmax activation to get attention weights
     attention = Dense(inputs.shape[1], activation='softmax')(attention)
 
-    # Specifying the output shape, because it will be critical when loading the model back
-    attention = Lambda(lambda x: tflow.expand_dims(x, axis=-1), output_shape=lambda s: (s[0], s[1], 1))(attention)
+    # Step 4: Reshape attention weights to (batch_size, sequence_length, 1)
+    attention = Reshape((inputs.shape[1], 1))(attention)  # Then, no Lambda
 
-    return Multiply()([inputs, attention])
+    # Step 5: Multiply the inputs by the attention weights
+    output = Multiply()([inputs, attention])
+
+    return output
 
 
 def temporal_block(x, dilation_rate, nb_filters, kernel_size, padding='causal', activation='relu'):

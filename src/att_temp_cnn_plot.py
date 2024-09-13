@@ -1,30 +1,14 @@
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from tensorflow.keras.layers import Lambda
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 import keras
 
 import helper as ld
 
-keras.config.enable_unsafe_deserialization()
-
-
-# Define the Lambda layer function with tf inside
-def lambda_layer_custom_function(x):
-    import tensorflow as tflow
-    return tflow.expand_dims(x, axis=-1)
-
-
-# Custom objects with Lambda layer that includes tf
-my_custom_objects = {
-    'Lambda': Lambda(lambda_layer_custom_function, output_shape=lambda s: (s[0], s[1], 1)),
-    'tf': tf
-}
 
 # Load model and pass custom_objects that ensure 'tf' is included
-model = keras.models.load_model('../models/latest_att_temp_cnn.keras', custom_objects=my_custom_objects,
-                                   compile=True, safe_mode=True)
+model = keras.models.load_model('../models/latest_att_temp_cnn.keras', compile=True, safe_mode=True)
 
 model.summary()
 
@@ -33,7 +17,7 @@ test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2015-09-01'
 max_power = test_mains['power'].max()
 test_mains['power'] = test_mains['power'] / max_power
 
-window_size = 60
+window_size = 15
 batch_size = 32
 
 test_mains_reshaped = test_mains['power'].values.reshape(-1, 1)
