@@ -23,7 +23,7 @@ if physical_devices:
 
 # Function to create a learning rate scheduler
 def scheduler(epoch, lr):
-    if epoch < 10:
+    if epoch < 5:
         return lr
     else:
         return lr * tf.math.exp(-0.1)
@@ -104,7 +104,7 @@ train_seq2point_dataset = tf.data.Dataset.from_tensor_slices((train_input_sequen
 test_seq2point_dataset = tf.data.Dataset.from_tensor_slices((test_input_sequences, test_target_values)).batch(4)
 
 # Create the Seq2Point model
-model = create_seq2point_model(input_shape, units=64)
+model = create_seq2point_model(input_shape, units=32)
 
 # Print model summary
 model.summary()
