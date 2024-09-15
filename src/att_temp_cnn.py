@@ -1,11 +1,10 @@
-import tensorflow as tf
-import helper as ld
+from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, TensorBoard
+from tensorflow.keras.layers import Dense, Conv1D, Input, Flatten, Multiply, Reshape
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, Conv1D, Input, Flatten, Multiply, Lambda
-from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint, TensorBoard
-from tensorflow.keras.layers import Dense, Flatten, Multiply, Reshape
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
+
+import helper as ld
 
 # Load data
 train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2015-02-15')

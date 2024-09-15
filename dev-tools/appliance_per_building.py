@@ -1,46 +1,85 @@
 import sys
+import json
+from nilmtk import DataSet, MeterGroup
+from nilmtk import HDFDataStore
+import matplotlib.pyplot as plt
+import pandas as pd
 
-from nilmtk import DataSet
-from pprint import pprint
 
-# Load the dataset
-dataset_path = 'ukdale.h5'
-if len(sys.argv) > 1:
-    dataset_path = sys.argv[1]
-else:
-    print("Defaulting to the DataSet file ukdale.h5")
-
-dataset = DataSet(dataset_path)
-
-# Initialize a dictionary to store appliances and the buildings they occur in
-appliance_buildings = {}
-
-# Iterate through each building in the dataset
-for building_i, building in enumerate(dataset.buildings, start=1):
+# Function to list available appliances in the building
+def list_appliances(hdf5_file: str, building: int):
+    dataset = DataSet(hdf5_file)
     elec = dataset.buildings[building].elec
 
-    # Collect appliances and the buildings they occur in
-    for meter in elec.submeters().meters:
-        for appliance in meter.appliances:
-            if dataset_path == 'AMPds2.h5':
-                appliance_name = appliance.metadata.get('description', 'Unknown')
-            else:
-                appliance_name = appliance.metadata.get('original_name', 'Unknown')  # Extract appliance name or type
+    appliances_list = []
+    for meter in elec.meters:
+        try:
+            appliance = meter.appliances[0]
+            appliance_name = appliance.metadata['original_name']
+        except KeyError:
+            appliance_name = appliance.metadata['type']
 
-            if appliance_name not in appliance_buildings:
-                appliance_buildings[appliance_name] = []
-            appliance_buildings[appliance_name].append(building_i)
+        appliances_list.append(appliance_name)
 
-# Saving the appliances associated with more than one building numbers
-useful_appliances = {}
-for appliance_name in appliance_buildings:
-    list_of_buildings = list(set(appliance_buildings[appliance_name]))
-    if len(dataset.buildings) == 1 or len(list_of_buildings) > 2:
-        useful_appliances[appliance_name] = list_of_buildings
+    print(f"Available appliances in building {building}:")
+    for appliance in appliances_list:
+        print(appliance)
 
-# Pretty print the appliances and the buildings they occur in
-print("Appliance-wise Buildings:")
-pprint(useful_appliances)
 
-# Close the dataset
-dataset.store.close()
+# Function to plot aggregate and selected appliances' power data
+def plot_power_data(hdf5_file: str, building: int, appliances: list):
+    dataset = DataSet(hdf5_file)
+    elec = dataset.buildings[building].elec
+
+    # Get the aggregate data for the building (total energy consumption)
+    aggregate = elec.power_series_all_data()
+
+    # Fetch and resample the aggregate data to hourly means for visualization
+    print("Fetching aggregate data...")
+    agg_data = aggregate.power_series_all_data().resample('H').mean()
+
+    # Set up the plot
+    plt.figure(figsize=(15, 8))
+    plt.plot(agg_data.index, agg_data.values, label='Aggregate Power', color='black', linewidth=1)
+
+    # For each selected appliance, fetch and plot the power data
+    for appliance_name in appliances:
+        meter = elec[appliance_name]
+
+        print(f"Fetching data for appliance: {appliance_name}")
+        appliance_data = meter.power_series_all_data().resample('H').mean()
+
+        plt.plot(appliance_data.index, appliance_data.values, label=appliance_name.capitalize())
+
+    # Customize the plot
+    plt.title(f'Power consumption for selected appliances in building {building}')
+    plt.xlabel('Time')
+    plt.ylabel('Power (Watts)')
+    plt.legend()
+    plt.tight_layout()
+
+    # Show plot
+    plt.show()
+
+
+# Example usage:
+data_set_file_path = '../datasets/ukdale.h5'
+building = 1
+appliances_to_plot = ['fridge', 'microwave', 'dishwasher']
+
+if len(sys.argv) > 1:
+    data_set_file_path = sys.argv[1]
+if len(sys.argv) > 2:
+    building = int(sys.argv[2])
+
+ukdale = DataSet(data_set_file_path)
+ukdale.set_window(start='2014-04-21', end='2014-04-22')
+elec = ukdale.buildings[building].elec
+elec.plot()
+plt.xlabel("Time")
+
+# List all available appliances in the selected building
+list_appliances(data_set_file_path, building)
+
+# Plot data for selected appliances
+plot_power_data(data_set_file_path, building, appliances_to_plot)

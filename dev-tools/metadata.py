@@ -48,7 +48,7 @@ def describe_data(hdf5_file: str, building_or_house: int, appliances: list) -> l
 
 appliances_to_plot = ['fridge', 'microwave', 'dishwasher']
 building = 1
-data_set_file_path = 'ukdale.h5'
+data_set_file_path = '../datasets/ukdale.h5'
 if len(sys.argv) > 1:
     data_set_file_path = sys.argv[1]
 if len(sys.argv) > 2:
