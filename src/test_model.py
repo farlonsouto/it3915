@@ -4,6 +4,7 @@ import keras
 
 
 
+
 def get_model():
     # Create a simple model.
     inputs = keras.Input(shape=(32,))
