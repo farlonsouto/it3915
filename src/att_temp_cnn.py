@@ -4,8 +4,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 
-import helper as ld
-
 # Load data
 train_mains = ld.load_data('../datasets/ukdale.h5', 1, '2014-01-01', '2015-02-15')
 test_mains = ld.load_data('../datasets/ukdale.h5', 5, '2014-01-01', '2015-02-15')
