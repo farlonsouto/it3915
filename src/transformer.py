@@ -1,56 +1,38 @@
 # Import necessary libraries
-import pandas as pd
-from nilmtk import DataSet
-from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping, ModelCheckpoint, TensorBoard
-from tensorflow.keras.layers import Input, Dense, LayerNormalization, MultiHeadAttention, Dropout, Flatten, Add
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
-import wandb
-from wandb.integration. keras import WandbMetricsLogger, WandbModelCheckpoint
 import random
 
+import pandas as pd
+from nilmtk import DataSet
+from tensorflow.keras.layers import Input, Dense, LayerNormalization, MultiHeadAttention, Dropout, Flatten, Add
+from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
+from wandb.integration.keras import WandbMetricsLogger, WandbModelCheckpoint
+
+import wandb
+
 '''
-1. **Hyperparameter Choices**:
-   - **`head_size=32`**: The size of each attention head. A larger head size captures more detailed relationships but comes with a higher computational cost.
-   - **`num_heads=2`**: The number of attention heads. Multiple heads allow the model to capture different types of relationships in parallel. Two heads will reduce complexity.
-   - **`ff_dim=64`**: The dimension of the feed-forward network. A smaller dimension reduces complexity.
-   - **`num_transformer_blocks=2`**: The number of stacked transformer blocks. Fewer blocks reduce the computational load.
-   - **`dropout=0.2`**: A higher dropout value helps prevent overfitting by randomly disabling some neurons during training.
-
-2. **Alternatives**:
-   - **Head Size**: You could increase the head size (e.g., to 64) to capture more intricate details in the data, though this might require more computational resources.
-   - **Number of Transformer Blocks**: Increasing to 4 or more blocks could help with deeper learning, though overfitting may become a concern.
-   - **Dropout Rate**: You could experiment with a higher dropout rate if overfitting becomes a problem during training.
-
-3. **Transformer Architecture**:
-   - **Multi-Head Attention**: This layer allows the model to focus on different parts of the input sequence (power consumption at different time steps) simultaneously, making it very effective for capturing long-term dependencies.
-   - **Feed Forward Network**: After the attention layer, a feed-forward network is applied to each position independently, adding non-linearity and increasing model capacity.
-   - **Layer Normalization**: This helps stabilize training by normalizing the inputs across the batch, preventing the model from becoming too sensitive to certain input values.
-   - **Residual Connections**: By adding the input to the output of the attention and feed-forward layers, the model can retain information from earlier layers, preventing the loss of information during deep training.
-
-4. **Callbacks**:
-   - **Learning Rate Scheduler**: This callback reduces the learning rate during training to help the model converge smoothly.
-   - **Early Stopping**: It helps prevent overfitting by stopping training if the validation loss stops improving.
-   - **Model Checkpoint**: Ensures the best model (with the lowest validation loss) is saved, even if training continues to overfit later.
+NTNU IT3920 - Master Thesis - MSIT
+Farlon de Alencar Souto
+Transformer NN Architecture Applied to NILM - From a vanilla to an (auto) tuned version.
 '''
 
 # Start a run, tracking hyperparameters
+# Start a run, tracking hyperparameters
 wandb.init(
-    # set the wandb project where this run will be logged
+    # Set the wandb project where this run will be logged
     project="nilm_transformer",
 
-    # track hyperparameters and run metadata with wandb.config
+    # Track hyperparameters and run metadata with wandb.config
     config={
         "layer_1": 512,
         "activation_1": "relu",
-        "dropout": random.uniform(0.01, 0.80),
+        "dropout": random.uniform(0.1, 0.5),  # Adjusted dropout range
         "layer_2": 10,
         "activation_2": "softmax",
-        "optimizer": "sgd",
-        "loss": "sparse_categorical_crossentropy",
-        "metric": "accuracy",
-        "epoch": 8,
+        "optimizer": "adam",  # Adam optimizer recommended for transformers
+        "loss": "mean_squared_error",  # MSE is more appropriate for regression tasks
+        "metric": "mae",  # MAE metric for regression tasks
+        "epoch": 2,  # Set to 2 for testing memory and functionality first
         "batch_size": 256
     }
 )
@@ -174,8 +156,8 @@ transformer_model = create_transformer_model(input_shape)
 
 # compile the model using wandb config
 transformer_model.compile(optimizer=config.optimizer,
-                          loss=config.loss,
-                          metrics=[config.metric]
+                          loss='mean_absolute_error',  # Use 'mae' or 'mean_squared_error' for regression
+                          metrics=['mae']
                           )
 
 # Print model summary to view the structure.
