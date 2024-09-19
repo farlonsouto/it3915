@@ -7,7 +7,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 import wandb
-from wandb.keras import WandbMetricsLogger, WandbModelCheckpoint
+from wandb.integration. keras import WandbMetricsLogger, WandbModelCheckpoint
 import random
 
 '''
@@ -35,7 +35,28 @@ import random
    - **Model Checkpoint**: Ensures the best model (with the lowest validation loss) is saved, even if training continues to overfit later.
 '''
 
+# Start a run, tracking hyperparameters
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="nilm_transformer",
 
+    # track hyperparameters and run metadata with wandb.config
+    config={
+        "layer_1": 512,
+        "activation_1": "relu",
+        "dropout": random.uniform(0.01, 0.80),
+        "layer_2": 10,
+        "activation_2": "softmax",
+        "optimizer": "sgd",
+        "loss": "sparse_categorical_crossentropy",
+        "metric": "accuracy",
+        "epoch": 8,
+        "batch_size": 256
+    }
+)
+
+# [optional] use wandb.config as your config
+config = wandb.config
 
 # Load data using NILMTK
 # We are training the model on data from Building 1, from '2014-01-01' to '2015-02-15'
@@ -84,7 +105,7 @@ test_mains_reshaped = test_mains_power.values.reshape(-1, 1)
 # This generator takes the time series data and creates batches for training.
 # Window size (30): We use 30 time steps (assuming data resolution is 1 second).
 # This helps capture short-term dependencies.
-window_size = 600  # 600 (data points per hour)
+window_size = 150  # 600 (data points per hour), so 150 is equivalent to 15 minutes
 batch_size = 32  # Batch size of 32 to increase training efficiency.
 
 # The generator feeds the reshaped data into the model for training.
@@ -132,7 +153,7 @@ def create_transformer_model(shape_of_input, head_size=32, num_heads=2, ff_dim=6
         x = transformer_encoder(x, head_size, num_heads, ff_dim, dropout)
 
     # The output is flattened before being passed to the final Dense layer.
-    # Flattening allows us to reduce the multi-dimensional output of the transformers into a 1D vector.
+    # Flattening allows us to reduce the multidimensional output of the transformers into a 1D vector.
     x = Flatten()(x)
 
     # The final Dense layer outputs a single value (since NILM is a regression problem, we use 'linear' activation).
@@ -142,7 +163,6 @@ def create_transformer_model(shape_of_input, head_size=32, num_heads=2, ff_dim=6
     # Adam is chosen for its adaptive learning rate capabilities, commonly used in deep learning.
     # Loss: Mean Squared Error (MSE) is typical for regression tasks.
     model = Model(inputs, outputs)
-    model.compile(optimizer=Adam(), loss='mse', metrics=['mae'])
 
     return model
 
@@ -152,33 +172,25 @@ def create_transformer_model(shape_of_input, head_size=32, num_heads=2, ff_dim=6
 input_shape = (window_size, 1)
 transformer_model = create_transformer_model(input_shape)
 
+# compile the model using wandb config
+transformer_model.compile(optimizer=config.optimizer,
+                          loss=config.loss,
+                          metrics=[config.metric]
+                          )
+
 # Print model summary to view the structure.
 transformer_model.summary()
 
-
-# Define callbacks for training.
-# LearningRateScheduler: This reduces the learning rate after a few epochs to stabilize training.
-def scheduler(epoch, lr):
-    if epoch > 2:
-        return lr * 0.5  # Halve the learning rate after 2 epochs for finer training.
-    return lr
-
-
-# Other callbacks: EarlyStopping halts training if the validation loss doesn't improve for 3 epochs.
-# ModelCheckpoint saves the model only if it improves on the validation data.
-callbacks = [
-    LearningRateScheduler(scheduler),
-    EarlyStopping(patience=3, monitor='val_loss', restore_best_weights=True),
-    ModelCheckpoint('../models/transformer_model.keras', save_best_only=True, monitor='val_loss'),
-    TensorBoard(log_dir='../logs')  # TensorBoard is used for visualizing training metrics.
-]
-
 # Train the model.
-# We train the model for 5 epochs, validating on the test data.
+# We train the model for n epochs (wandb based), validating on the test data.
 # The generators automatically provide data in the correct format for training and validation.
-transformer_model.fit(train_generator, epochs=5, validation_data=test_generator, callbacks=callbacks)
-
-# Evaluate the model on the test data.
-# After training, we evaluate its performance using the Mean Absolute Error (MAE) metric.
-loss, mae = transformer_model.evaluate(test_generator)
-print(f'Test MAE: {mae}')
+# WandbMetricsLogger will log train and validation metrics to wandb
+# WandbModelCheckpoint will upload model checkpoints to wandb
+history = transformer_model.fit(train_generator,
+                                epochs=config.epoch,
+                                batch_size=config.batch_size,
+                                validation_data=test_generator,
+                                callbacks=[
+                                    WandbMetricsLogger(log_freq=5),
+                                    WandbModelCheckpoint("models")
+                                ])
