@@ -6,6 +6,9 @@ from tensorflow.keras.layers import Input, Dense, LayerNormalization, MultiHeadA
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
+import wandb
+from wandb.keras import WandbMetricsLogger, WandbModelCheckpoint
+import random
 
 '''
 1. **Hyperparameter Choices**:
@@ -30,9 +33,9 @@ from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
    - **Learning Rate Scheduler**: This callback reduces the learning rate during training to help the model converge smoothly.
    - **Early Stopping**: It helps prevent overfitting by stopping training if the validation loss stops improving.
    - **Model Checkpoint**: Ensures the best model (with the lowest validation loss) is saved, even if training continues to overfit later.
-
-Let me know if you'd like further clarification on any part of the code!
 '''
+
+
 
 # Load data using NILMTK
 # We are training the model on data from Building 1, from '2014-01-01' to '2015-02-15'

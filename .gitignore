@@ -3,5 +3,6 @@ logs/train/
 datasets/*.h5
 !logs/.gitkeep
 .idea
+wandb/
 src/__pycache__
 __pycache__/
