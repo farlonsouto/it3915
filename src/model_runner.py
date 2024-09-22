@@ -6,6 +6,7 @@ from nilmtk import DataSet
 from wandb.integration.keras import WandbMetricsLogger, WandbModelCheckpoint
 
 import wandb
+from soft_dtw_loss_wrapper import SoftDTWLoss
 from time_series_helper import TimeSeriesHelper
 from transformer import Transformer
 
@@ -22,16 +23,16 @@ wandb.init(
 
     # Track hyperparameters and run metadata with wandb.config
     config={
-        "layer_1": 512,
+        "layer_1": 1024,
         "activation_1": "relu",
-        "dropout": random.uniform(0.1, 0.5),  # Adjusted dropout range
-        "layer_2": 10,
+        "dropout": random.uniform(0.28, 0.45),  # Adjusted dropout range
+        "layer_2": 16,
         "activation_2": "softmax",
         "optimizer": "adam",  # Adam optimizer recommended for transformers
         "loss": "mean_squared_error",  # MSE is more appropriate for regression tasks
         "metric": "mae",  # MAE metric for regression tasks
         "epoch": 2,  # Set to 2 for testing memory and functionality first
-        "batch_size": 256
+        "batch_size": 512
     }
 )
 
@@ -54,13 +55,17 @@ transformer_model = Transformer((window_size, 1), head_size=32, num_heads=2, ff_
 
 # Custom SAE metric
 
-def sae_metric(y_true, y_pred):
-    return tf.abs(tf.reduce_sum(y_true) - tf.reduce_sum(y_pred))
+def sae_metric(y_true, y_prediction):
+    y_true = tf.reshape(y_true, [tf.shape(y_true)[0], -1])  # Flattening
+    y_prediction = tf.reshape(y_prediction, [tf.shape(y_prediction)[0], -1])  # Flattening
+    tf.print("y_true shape: ", tf.shape(y_true))
+    tf.print("y_pred shape: ", tf.shape(y_prediction))
+    return tf.abs(tf.reduce_sum(y_true) - tf.reduce_sum(y_prediction))
 
 
 # Compile the model
 transformer_model.compile(optimizer=config.optimizer,
-                          loss='mean_absolute_error',
+                          loss=SoftDTWLoss(gamma=1.0),
                           metrics=['mae', sae_metric]  # Adding SAE metric
                           )
 
