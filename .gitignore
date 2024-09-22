@@ -4,5 +4,6 @@ datasets/*.h5
 !logs/.gitkeep
 .idea
 wandb/
+src/wandb
 src/__pycache__
 __pycache__/

@@ -1,11 +1,11 @@
 # Import necessary libraries
 import random
 
-import numpy as np
-import wandb
+import tensorflow as tf
 from nilmtk import DataSet
 from wandb.integration.keras import WandbMetricsLogger, WandbModelCheckpoint
 
+import wandb
 from time_series_helper import TimeSeriesHelper
 from transformer import Transformer
 
@@ -53,8 +53,9 @@ transformer_model = Transformer((window_size, 1), head_size=32, num_heads=2, ff_
 
 
 # Custom SAE metric
+
 def sae_metric(y_true, y_pred):
-    return abs(np.sum(y_true) - np.sum(y_pred))
+    return tf.abs(tf.reduce_sum(y_true) - tf.reduce_sum(y_pred))
 
 
 # Compile the model

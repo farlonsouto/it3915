@@ -30,8 +30,30 @@ class TimeSeriesHelper:
             if isinstance(train_mains_df.columns, pd.MultiIndex):
                 train_mains_df.columns = ['_'.join(col).strip() for col in train_mains_df.columns.values]
 
-            train_mains_power = train_mains_df['power_active']
+            # Debug: Print available columns to help understand the structure
+            print(f"Available columns for Building {building}: {train_mains_df.columns}")
+
+            # Skip buildings with no available columns
+            if train_mains_df.empty:
+                print(f"Skipping Building {building} due to lack of data.")
+                continue
+
+            # Check if 'power_active' exists, otherwise search for a power-related column
+            if 'power_active' in train_mains_df.columns:
+                train_mains_power = train_mains_df['power_active']
+            else:
+                # Fall back: Look for a column that contains 'power'
+                power_column = [col for col in train_mains_df.columns if 'power' in col.lower()]
+                if power_column:
+                    train_mains_power = train_mains_df[power_column[0]]
+                else:
+                    print(f"No power-related column found in building {building}, skipping.")
+                    continue
+
             train_mains_list.append(train_mains_power)
+
+        if not train_mains_list:
+            raise ValueError("No valid power data found for any of the buildings in the training set.")
 
         # Concatenate the data from all buildings into a single series for normalization
         all_train_mains_power = pd.concat(train_mains_list)
@@ -51,8 +73,18 @@ class TimeSeriesHelper:
         if isinstance(test_mains_df.columns, pd.MultiIndex):
             test_mains_df.columns = ['_'.join(col).strip() for col in test_mains_df.columns.values]
 
-        test_mains_power = test_mains_df['power_active']
-        test_mains_normalized = (test_mains_power - self.mean_power) / self.std_power  # Use train set mean and std
+        # Check if 'power_active' exists in the test set, otherwise search for a power-related column
+        if 'power_active' in test_mains_df.columns:
+            test_mains_power = test_mains_df['power_active']
+        else:
+            power_column = [col for col in test_mains_df.columns if 'power' in col.lower()]
+            if power_column:
+                test_mains_power = test_mains_df[power_column[0]]
+            else:
+                raise KeyError(f"No power-related column found in Building 5 mains data.")
+
+        # Normalize test data using the same mean and std from the training data
+        test_mains_normalized = (test_mains_power - self.mean_power) / self.std_power
 
         # Reshape the data into the form expected by the model
         self.train_mains_reshaped = train_mains_normalized.values.reshape(-1, 1)
