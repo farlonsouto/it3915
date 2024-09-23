@@ -10,25 +10,21 @@ class DynamicTimeWarping(tf.keras.losses.Loss):
         self.gamma = gamma
 
     def call(self, y_true, y_pred):
-        # Use tf.py_function to apply the NumPy-based DTW in TensorFlow
+        y_true = tf.cast(y_true, dtype=tf.float32)
+        y_pred = tf.cast(y_pred, dtype=tf.float32)
         loss = tf.py_function(self.compute_dtw_loss, [y_true, y_pred], tf.float32)
-        loss.set_shape([])  # Ensure the loss returns a scalar
         return loss
 
     def compute_dtw_loss(self, y_true, y_pred):
-        # Convert TensorFlow tensors to NumPy arrays for SoftDTW
         y_true_np = y_true.numpy()
         y_pred_np = y_pred.numpy()
 
-        # Ensure both arrays are 2D
-        y_true_np = np.atleast_2d(y_true_np)
-        y_pred_np = np.atleast_2d(y_pred_np)
+        batch_size = y_true_np.shape[0]
+        loss = 0
 
-        # Compute the distance matrix using SquaredEuclidean
-        D = SquaredEuclidean(y_true_np, y_pred_np)
+        for i in range(batch_size):
+            D = SquaredEuclidean(y_true_np[i:i + 1], y_pred_np[i:i + 1])
+            sdtw = SoftDTW(D, gamma=self.gamma)
+            loss += sdtw.compute()
 
-        # Initialize SoftDTW and compute the loss
-        sdtw = SoftDTW(D, gamma=self.gamma)
-        loss = sdtw.compute()
-
-        return np.float32(loss)
+        return np.float32(loss / batch_size)
