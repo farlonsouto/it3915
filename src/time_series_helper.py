@@ -90,6 +90,9 @@ class TimeSeriesHelper:
         self.train_mains_reshaped = train_mains_normalized.values.reshape(-1, 1)
         self.test_mains_reshaped = test_mains_normalized.values.reshape(-1, 1)
 
+        print(f"time series helper - Training data shape: {self.train_mains_reshaped.shape}")
+        print(f"time series helper - Test data shape: {self.test_mains_reshaped.shape}")
+
     def getTrainingDataGenerator(self):
         # Prepare training data generator using TimeSeriesGenerator
         return TimeseriesGenerator(self.train_mains_reshaped, self.train_mains_reshaped,

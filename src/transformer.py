@@ -1,5 +1,6 @@
-from tensorflow.keras.layers import Input, Dense, LayerNormalization, MultiHeadAttention, Dropout, Flatten, Add
+from tensorflow.keras.layers import Input, Dense, LayerNormalization, MultiHeadAttention, Dropout, Add
 from tensorflow.keras.models import Model
+from tensorflow.python.keras.layers import Flatten
 
 
 class Transformer:
@@ -44,9 +45,12 @@ class Transformer:
         ff_output = Add()([attention_output, ff_output])
         ff_output = LayerNormalization(epsilon=1e-6)(ff_output)
 
+        print(f"Shape after MultiHeadAttention: {attention_output.shape}")
+        print(f"Shape after FeedForward layers: {ff_output.shape}")
+
         return ff_output
 
-    def create_transformer_model(self) -> Model:
+    def create_transformer_model(self, metrics=None) -> Model:
         """
         Creates the transformer model for NILM.
 
@@ -60,7 +64,16 @@ class Transformer:
             x = self.transformer_encoder(x)
 
         x = Flatten()(x)
+        # After Flatten layer
+        print(f"Shape after Flatten: {x.shape}")
+
         outputs = Dense(1, activation='linear')(x)
+        # After Dense layer
+        print(f"Shape after Dense: {outputs.shape}")
 
         model = Model(inputs, outputs)
+
+        # Compile the model with the passed metrics
+        model.compile(optimizer='adam', loss='mean_squared_error', metrics=metrics)
+
         return model

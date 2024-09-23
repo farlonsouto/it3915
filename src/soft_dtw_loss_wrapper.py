@@ -1,29 +1,34 @@
 import numpy as np
 import tensorflow as tf
-from sdtw import SoftDTW  # Adjust to your SoftDTW package path
+from sdtw import SoftDTW
+from sdtw.distance import SquaredEuclidean
 
 
-class SoftDTWLoss(tf.keras.losses.Loss):
-    def __init__(self, gamma=1.0):
-        super(SoftDTWLoss, self).__init__()
+class DynamicTimeWarping(tf.keras.losses.Loss):
+    def __init__(self, gamma=1.0, **kwargs):
+        super(DynamicTimeWarping, self).__init__(**kwargs)
         self.gamma = gamma
 
     def call(self, y_true, y_pred):
-        # Ensure y_true and y_pred are at least 2D
-        y_true = tf.ensure_shape(y_true, [None, None])  # Ensure at least 2D shape
-        y_pred = tf.ensure_shape(y_pred, [None, None])  # Ensure at least 2D shape
-
-        # Wrap the soft-DTW computation inside a tf.py_function
-        def compute_soft_dtw(y_true_np, y_pred_np):
-            # Compute distance matrix (Euclidean)
-            D = np.linalg.norm(y_true_np[:, None] - y_pred_np[None, :], axis=-1)
-
-            # Compute Soft-DTW using the NumPy implementation
-            sdtw = SoftDTW(D, gamma=self.gamma)
-            loss = sdtw.compute()
-            return np.array([loss], dtype=np.float32)
-
-        # Wrap the NumPy computation using tf.py_function
-        loss = tf.py_function(func=compute_soft_dtw, inp=[y_true, y_pred], Tout=tf.float32)
-
+        # Use tf.py_function to apply the NumPy-based DTW in TensorFlow
+        loss = tf.py_function(self.compute_dtw_loss, [y_true, y_pred], tf.float32)
+        loss.set_shape([])  # Ensure the loss returns a scalar
         return loss
+
+    def compute_dtw_loss(self, y_true, y_pred):
+        # Convert TensorFlow tensors to NumPy arrays for SoftDTW
+        y_true_np = y_true.numpy()
+        y_pred_np = y_pred.numpy()
+
+        # Ensure both arrays are 2D
+        y_true_np = np.atleast_2d(y_true_np)
+        y_pred_np = np.atleast_2d(y_pred_np)
+
+        # Compute the distance matrix using SquaredEuclidean
+        D = SquaredEuclidean(y_true_np, y_pred_np)
+
+        # Initialize SoftDTW and compute the loss
+        sdtw = SoftDTW(D, gamma=self.gamma)
+        loss = sdtw.compute()
+
+        return np.float32(loss)
