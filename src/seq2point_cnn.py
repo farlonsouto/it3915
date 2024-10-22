@@ -4,7 +4,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler, TensorBoard
 import numpy as np
-from helper import load_data
+from time_series_helper import TimeSeriesHelper
 from tensorflow.keras.mixed_precision import set_global_policy, Policy
 from tensorflow.keras import backend as tfk_backend
 
@@ -34,7 +34,7 @@ def create_seq2point_model(input_shape_param, units=64):
     # Input layer
     inputs = Input(shape=input_shape_param, name="input_layer")
 
-    # Convolutional layers
+    # Convolutional layers: two. For no reason. Check others' implementation. Fundaments, etc
     conv1 = Conv1D(filters=units, kernel_size=3, activation='relu', padding='same')(inputs)
     conv2 = Conv1D(filters=units, kernel_size=3, activation='relu', padding='same')(conv1)
 
@@ -43,6 +43,8 @@ def create_seq2point_model(input_shape_param, units=64):
 
     # Fully connected layer to output a single value (appliance power consumption)
     dense = Dense(units=units, activation='relu')(flatten)
+    # TODO: Where is the dropout?
+    # TODO: What is the dimensionality of the output since it's a "point"
     outputs = Dense(1, activation='linear', dtype=tf.float32)(dense)
 
     # Define the model
@@ -53,7 +55,13 @@ def create_seq2point_model(input_shape_param, units=64):
 
 
 # Function to create input/output sequences from the data (for Seq2Point)
+# TODO: Go deeper here. Study to understand why.
 def create_seq2point_sequences(df, input_seq_length):
+
+#TODO: Check a well stablished article + impl regarding handoing the input sequence
+#(time_step, total_power_consumption, appliance, appliance_consumption)xn =>
+#(time_step, appliance, appliance_consumption)
+
     input_sequences = []
     target_values = []
     for i in range(len(df) - input_seq_length):
