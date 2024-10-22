@@ -3,18 +3,19 @@ from tensorflow.keras import layers, Model
 
 
 class BERT4NILM(Model):
-    def __init__(self, args):
-        super(BERT4NILM, self).__init__()
-        self.args = args
+    def __init__(self, wandb_config):
 
-        self.original_len = args.window_size
+        super(BERT4NILM, self).__init__()
+        self.args = wandb_config
+
+        self.original_len = wandb_config.window_size
         self.latent_len = int(self.original_len / 2)
-        self.dropout_rate = args.drop_out
+        self.dropout_rate = wandb_config.dropout
 
         self.hidden = 256
         self.heads = 2
         self.n_layers = 2
-        self.output_size = args.output_size
+        self.output_size = wandb_config.output_size
 
         # Convolution and pooling layers
         self.conv = layers.Conv1D(filters=self.hidden, kernel_size=5, padding='same', activation='relu')
