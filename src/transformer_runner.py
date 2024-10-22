@@ -8,10 +8,10 @@ from time_series_helper import TimeSeriesHelper
 from transformer import Transformer
 
 
-def sae_metric(y_true, y_prediction):
-    y_true = tf.reshape(y_true, [-1])
+def sae_metric(y_ground_truth, y_prediction):
+    y_ground_truth = tf.reshape(y_ground_truth, [-1])
     y_prediction = tf.reshape(y_prediction, [-1])
-    return tf.abs(tf.reduce_sum(y_true) - tf.reduce_sum(y_prediction))
+    return tf.abs(tf.reduce_sum(y_ground_truth) - tf.reduce_sum(y_prediction))
 
 
 wandb.init(
@@ -27,8 +27,8 @@ wandb.init(
         "learning_rate": 0.001,
         "epochs": 10,
         "optimizer": "adam",
-        "loss": "dynamic_time_warping",
-        # "loss": "mean_squared_error",
+        # loss": "dynamic_time_warping",
+        "loss": "mean_absolute_error",
     }
 )
 
