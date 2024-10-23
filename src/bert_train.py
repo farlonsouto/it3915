@@ -7,23 +7,58 @@ from bert4nilm import BERT4NILM
 from bert_loss import bert4nilm_loss
 
 
-# Custom metric for Summed Absolute Error (SAE)
 def sae_metric(y_ground_truth, y_prediction):
+    """
+    Calculates the Summed Absolute Error (SAE) between ground truth and predicted values.
+
+    Args:
+        y_ground_truth (Tensor): Ground truth values.
+        y_prediction (Tensor): Predicted values.
+
+    Returns:
+        Tensor: Summed Absolute Error (SAE) between ground truth and predicted values.
+    """
     y_ground_truth = tf.reshape(y_ground_truth, [-1])
     y_prediction = tf.reshape(y_prediction, [-1])
     return tf.abs(tf.reduce_sum(y_ground_truth) - tf.reduce_sum(y_prediction))
 
 
-# Custom metric for Mean Relative Error (MRE)
 def mre_metric(y_ground_truth, y_prediction):
+    """
+    Calculates the Mean Relative Error (MRE) between ground truth and predicted values.
+
+    The Mean Relative Error is the average absolute difference between the ground truth and predicted values,
+    normalized by the ground truth value.
+
+    Args:
+        y_ground_truth (Tensor): Ground truth values.
+        y_prediction (Tensor): Predicted values.
+
+    Returns:
+        Tensor: Mean Relative Error (MRE) between ground truth and predicted values.
+    """
     y_ground_truth = tf.reshape(y_ground_truth, [-1])
     y_prediction = tf.reshape(y_prediction, [-1])
     relative_error = tf.abs(y_ground_truth - y_prediction) / (y_ground_truth + tf.keras.backend.epsilon())
     return tf.reduce_mean(relative_error)
 
 
-# Custom metric for F1 Score
 def f1_score(y_ground_truth, y_prediction):
+    """
+    Calculates the F1 score between ground truth and predicted values.
+
+    The F1 score is the harmonic mean of precision and recall, where an F1 score reaches its best value at 1 and worst at 0.
+
+    Args:
+        y_ground_truth (Tensor): Ground truth values.
+        y_prediction (Tensor): Predicted values.
+
+    Returns:
+        Tensor: F1 score between ground truth and predicted values.
+
+    Notes:
+        This implementation assumes binary classification, where ground truth and predicted values are converted to binary (0/1) values.
+    """
     y_ground_truth = tf.cast(y_ground_truth > 0, tf.float32)
     y_prediction = tf.cast(y_prediction > 0, tf.float32)
 
@@ -42,9 +77,9 @@ def f1_score(y_ground_truth, y_prediction):
 wandb.init(
     project="nilm_bert_transformer",
     config={
-        "window_size": 480,
-        "batch_size": 512,
-        "head_size": 256,
+        "window_size": 128,
+        "batch_size": 128,
+        "head_size": 128,
         "num_heads": 2,
         "n_layers": 2,
         "dropout": 0.1,
@@ -55,7 +90,20 @@ wandb.init(
         "tau": 1.0,
         "lambda_val": 0.1,
         "masking_portion": 0.25,
-        "output_size": 1
+        "output_size": 1,
+        "conv_kernel_size": 4,
+        "deconv_kernel_size": 4,
+        "embedding_dim": 128,
+        "pooling_type": "max",  # Options: 'max', 'average'
+        "conv_activation": "relu",
+        "dense_activation": "tanh",
+        "conv_filters": 128,  # Now separate from head_size
+        "ff_dim": 512,  # Feed-forward network dimension
+        "layer_norm_epsilon": 1e-6,
+        "kernel_initializer": "glorot_uniform",
+        "bias_initializer": "zeros",
+        "kernel_regularizer": None,  # Options: None, 'l1', 'l2', 'l1_l2'
+        "bias_regularizer": None,  # Options: None, 'l1', 'l2', 'l1_l2'
     }
 )
 
