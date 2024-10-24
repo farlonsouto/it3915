@@ -6,24 +6,30 @@ class LearnedL2NormPooling(layers.Layer):
     def __init__(self, pool_size=2, **kwargs):
         super(LearnedL2NormPooling, self).__init__(**kwargs)
         self.pool_size = pool_size
-        self.weight = None
 
     def build(self, input_shape):
         self.weight = self.add_weight(
             name='l2_norm_weight',
-            shape=(1, 1, input_shape[-1]),
+            shape=(1, 1, input_shape[-1]),  # Last dimension is the channel dimension
             initializer='ones',
             trainable=True
         )
 
     def call(self, inputs, **kwargs):
+        # Ensure input is 3D for Conv1D/Pooling, (batch_size, timesteps, channels)
+        if inputs.shape.ndims == 4:
+            inputs = tf.squeeze(inputs, axis=-2)  # Remove the extra dimension if present
+
         squared_inputs = tf.square(inputs)
-        pooled = tf.nn.avg_pool2d(
+
+        # Perform average pooling with 1D pooling (3D input: batch_size, timesteps, channels)
+        pooled = tf.nn.avg_pool1d(
             squared_inputs,
-            ksize=[1, self.pool_size, 1, 1],
-            strides=[1, self.pool_size, 1, 1],
+            ksize=self.pool_size,  # Pooling size over the time dimension
+            strides=self.pool_size,
             padding='VALID'
         )
+
         weighted_pooled = pooled * self.weight
         return tf.sqrt(weighted_pooled)
 
