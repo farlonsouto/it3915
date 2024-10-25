@@ -19,119 +19,124 @@ class TimeSeriesHelper:
         self.test_appliance = None
         self._prepare_data()
 
+    def _handle_timeseries(self, mains_df, appliance_df, building_num, is_training=True):
+        """Helper method to process individual building data"""
+        print(f"Processing {'training' if is_training else 'test'} data from building {building_num}")
+
+        # Extract power readings
+        mains_power = mains_df['power']['active']
+        appliance_power = appliance_df['power']['active']
+
+        # Handle missing values in mains power
+        mains_power = mains_power.fillna(method='ffill').fillna(method='bfill')
+
+        # Handle missing values in appliance power - fill with zeros as appliances are usually off
+        appliance_power = appliance_power.fillna(0)
+
+        # ** Remove duplicates before resampling **
+        mains_power = mains_power[~mains_power.index.duplicated(keep='first')]
+        appliance_power = appliance_power[~appliance_power.index.duplicated(keep='first')]
+
+        # Resample both series to 6S frequency using interpolation for mains
+        # and forward fill for appliance (since appliance states tend to persist)
+        mains_power = mains_power.resample('6S').interpolate(method='linear')
+        appliance_power = appliance_power.resample('6S').ffill()
+
+        # Align the series
+        mains_power, appliance_power = mains_power.align(appliance_power, join='inner')
+
+        # Remove any remaining NaN values by dropping those rows
+        valid_idx = ~(mains_power.isna() | appliance_power.isna())
+        mains_power = mains_power[valid_idx]
+        appliance_power = appliance_power[valid_idx]
+
+        print(f"Processed data shape: {mains_power.shape}")
+        print(f"Any NaN in mains: {mains_power.isna().any()}")
+        print(f"Any NaN in appliance: {appliance_power.isna().any()}")
+
+        return mains_power, appliance_power
+
     def _prepare_data(self):
+        """Prepare the training and testing data"""
         train_mains_list = []
         train_appliance_list = []
 
-        # Process Building 1 (training data)
-        building = 1
-        train_elec = self.dataset.buildings[building].elec
-        train_mains = train_elec.mains()
-        train_appliance = train_elec[self.appliance]
+        try:
+            # Process Building 1 (training data)
+            building = 1
+            train_elec = self.dataset.buildings[building].elec
+            train_mains = train_elec.mains()
+            train_appliance = train_elec[self.appliance]
 
-        # Load mains and appliance data
-        train_mains_df = next(train_mains.load())
-        train_appliance_df = next(train_appliance.load())
+            train_mains_df = next(train_mains.load())
+            train_appliance_df = next(train_appliance.load())
 
-        print(f"Building {building} mains columns: {train_mains_df.columns}")
-        print(f"Building {building} appliance columns: {train_appliance_df.columns}")
+            mains_power, appliance_power = self._handle_timeseries(
+                train_mains_df,
+                train_appliance_df,
+                building,
+                is_training=True
+            )
 
-        # Ensure index is a DatetimeIndex
-        if not isinstance(train_mains_df.index, pd.DatetimeIndex):
-            raise ValueError("Mains data index is not a DatetimeIndex. Please check the dataset.")
+            train_mains_list.append(mains_power)
+            train_appliance_list.append(appliance_power)
 
-        # Handle duplicate timestamps by averaging them
-        if train_mains_df.index.duplicated().any():
-            print("Duplicate timestamps found, averaging duplicate entries.")
-            train_mains_df = train_mains_df.groupby(train_mains_df.index).mean()
+            # Process test data (Building 5)
+            test_elec = self.dataset.buildings[5].elec
+            test_mains = test_elec.mains()
+            test_appliance = test_elec[self.appliance]
+            test_mains_df = next(test_mains.load())
+            test_appliance_df = next(test_appliance.load())
 
-        # Check if frequency is set
-        if train_mains_df.index.freq is None:
-            print("Frequency is not set for mains data. Resampling mains to match appliance intervals.")
-            # Resample mains data to 6-second intervals (matching appliance data)
-            train_mains_power = train_mains_df['power']['active'].resample('6S').mean()
-        else:
-            # Use 6-second mains data as-is
-            train_mains_power = train_mains_df['power']['active']
+            test_mains_power, test_appliance_power = self._handle_timeseries(
+                test_mains_df,
+                test_appliance_df,
+                5,
+                is_training=False
+            )
 
-        # Extract appliance data (already at 6-second resolution)
-        train_appliance_power = train_appliance_df['power']['active']
+            # Combine all training data
+            all_train_mains_power = pd.concat(train_mains_list)
+            all_train_appliance_power = pd.concat(train_appliance_list)
 
-        # Align mains and appliance data by their time indexes
-        train_mains_power, train_appliance_power = train_mains_power.align(train_appliance_power, join='inner')
+            # Calculate normalization parameters from training data
+            self.mean_power = all_train_mains_power.mean()
+            print(f"Mean power: {self.mean_power}")
+            self.std_power = all_train_mains_power.std()
+            print(f"Std power: {self.std_power}")
 
-        # Debugging print statements
-        print("Aligned training mains data: ")
-        print(train_mains_power.head())
+            # Normalize the data
+            self.train_mains = (all_train_mains_power - self.mean_power) / self.std_power
+            self.train_appliance = all_train_appliance_power
 
-        print("Aligned training appliance data: ")
-        print(train_appliance_power.head())
+            self.test_mains = (test_mains_power - self.mean_power) / self.std_power
+            self.test_appliance = test_appliance_power
 
-        train_mains_list.append(train_mains_power)
-        train_appliance_list.append(train_appliance_power)
+            # Final validation
+            if np.any(np.isnan(self.train_mains)) or np.any(np.isnan(self.train_appliance)):
+                raise ValueError("Training data still contains NaN values after processing")
 
-        # Process test data (Building 5)
-        test_elec = self.dataset.buildings[5].elec
-        test_mains = test_elec.mains()
-        test_appliance = test_elec[self.appliance]
-        test_mains_df = next(test_mains.load())
-        test_appliance_df = next(test_appliance.load())
+            if np.any(np.isnan(self.test_mains)) or np.any(np.isnan(self.test_appliance)):
+                raise ValueError("Test data still contains NaN values after processing")
 
-        print(f"Test building mains columns: {test_mains_df.columns}")
-        print(f"Test building appliance columns: {test_appliance_df.columns}")
+            # Print final shapes and statistics
+            print("\nFinal data statistics:")
+            print(f"Training samples: {len(self.train_mains)}")
+            print(f"Test samples: {len(self.test_mains)}")
+            print(f"Training mains range: [{self.train_mains.min():.2f}, {self.train_mains.max():.2f}]")
+            print(f"Training appliance range: [{self.train_appliance.min():.2f}, {self.train_appliance.max():.2f}]")
 
-        # Ensure index is a DatetimeIndex for test data
-        if not isinstance(test_mains_df.index, pd.DatetimeIndex):
-            raise ValueError("Test mains data index is not a DatetimeIndex. Please check the dataset.")
-
-        # Handle duplicate timestamps in test data
-        if test_mains_df.index.duplicated().any():
-            print("Duplicate timestamps found in test data, averaging duplicate entries.")
-            test_mains_df = test_mains_df.groupby(test_mains_df.index).mean()
-
-        # Check if frequency is set for test data
-        if test_mains_df.index.freq is None:
-            print("Frequency is not set for test mains data. Resampling mains to match appliance intervals.")
-            # Resample mains data to 6-second intervals
-            test_mains_power = test_mains_df['power']['active'].resample('6S').mean()
-        else:
-            test_mains_power = test_mains_df['power']['active']
-
-        # Extract appliance data for the test set
-        test_appliance_power = test_appliance_df['power']['active']
-
-        # Align mains and appliance data for the test set by their time indexes
-        test_mains_power, test_appliance_power = test_mains_power.align(test_appliance_power, join='inner')
-
-        # Debugging print statements
-        print("Aligned test mains data: ")
-        print(test_mains_power.head())
-
-        print("Aligned test appliance data: ")
-        print(test_appliance_power.head())
-
-        # Prepare training data
-        all_train_mains_power = pd.concat(train_mains_list)
-        all_train_appliance_power = pd.concat(train_appliance_list)
-        self.mean_power = all_train_mains_power.mean()
-        self.std_power = all_train_mains_power.std()
-
-        self.train_mains = (all_train_mains_power - self.mean_power) / self.std_power
-        self.train_appliance = all_train_appliance_power
-
-        # Prepare test data
-        self.test_mains = (test_mains_power - self.mean_power) / self.std_power
-        self.test_appliance = test_appliance_power
-
-        # Debugging print statements
-        print(f"Final training data shape: {self.train_mains.shape}, {self.train_appliance.shape}")
-        print(f"Final test data shape: {self.test_mains.shape}, {self.test_appliance.shape}")
+        except Exception as e:
+            print(f"Error during data preparation: {str(e)}")
+            raise
 
     def getTrainingDataGenerator(self):
-        return TimeSeriesGenerator(self.train_mains, self.train_appliance, self.window_size, self.batch_size)
+        return TimeSeriesGenerator(self.train_mains, self.train_appliance,
+                                   self.window_size, self.batch_size)
 
     def getTestDataGenerator(self):
-        return TimeSeriesGenerator(self.test_mains, self.test_appliance, self.window_size, self.batch_size)
+        return TimeSeriesGenerator(self.test_mains, self.test_appliance,
+                                   self.window_size, self.batch_size)
 
 
 class TimeSeriesGenerator(Sequence):
@@ -151,5 +156,4 @@ class TimeSeriesGenerator(Sequence):
         y = np.array([self.appliance_series[i:i + self.window_size] for i in batch_indexes])
         # Ensure y has the shape (batch_size, window_size, 1)
         y = y.reshape(self.batch_size, self.window_size, 1)
-        print(f"TimeSeriesGenerator getItem method: X shape: {X.shape}, y shape: {y.shape}")
         return X, y

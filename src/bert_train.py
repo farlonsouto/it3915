@@ -1,10 +1,13 @@
+import numpy as np
 import tensorflow as tf
+import wandb
 from nilmtk import DataSet
 from wandb.integration.keras import WandbCallback
 
-import wandb
 from bert4nilm import BERT4NILM
-from bert_loss import bert4nilm_loss
+from custom_callbacks import BatchStatsCallback, GradientDebugCallback
+from custom_loss import bert4nilm_loss
+from custom_metrics import mre_metric, f1_score, nde_metric
 from time_series_helper import TimeSeriesHelper
 
 # GPU memory to grow as needed. Tries to avoid GPU out-of-memory issues
@@ -15,90 +18,6 @@ if gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
     except RuntimeError as e:
         print(e)
-
-
-def mre_metric(y_ground_truth, y_prediction):
-    """
-    Calculates the Mean Relative Error (MRE) between ground truth and predicted values.
-
-    The Mean Relative Error is the average absolute difference between the ground truth and predicted values,
-    normalized by the ground truth value.
-
-    Args:
-        y_ground_truth (Tensor): Ground truth values.
-        y_prediction (Tensor): Predicted values.
-
-    Returns:
-        Tensor: Mean Relative Error (MRE) between ground truth and predicted values.
-    """
-    y_ground_truth = tf.reshape(y_ground_truth, [-1])
-    y_prediction = tf.reshape(y_prediction, [-1])
-    relative_error = tf.abs(y_ground_truth - y_prediction) / (tf.abs(y_ground_truth) + tf.keras.backend.epsilon())
-    return tf.reduce_mean(relative_error)
-
-
-def f1_score(y_ground_truth, y_prediction):
-    """
-    Calculates the F1 score between ground truth and predicted values.
-
-    The F1 score is the harmonic mean of precision and recall, where an F1 score reaches its best value at 1 and worst at 0.
-
-    Args:
-        y_ground_truth (Tensor): Ground truth values.
-        y_prediction (Tensor): Predicted values.
-
-    Returns:
-        Tensor: F1 score between ground truth and predicted values.
-
-    Notes:
-        This implementation assumes binary classification, where ground truth and predicted values are converted to binary (0/1) values.
-    """
-    y_ground_truth = tf.cast(y_ground_truth > 0, tf.float32)
-    y_prediction = tf.cast(y_prediction > 0, tf.float32)
-
-    true_positives = tf.reduce_sum(y_ground_truth * y_prediction)
-    predicted_positives = tf.reduce_sum(y_prediction)
-    actual_positives = tf.reduce_sum(y_ground_truth)
-
-    precision = true_positives / (predicted_positives + tf.keras.backend.epsilon())
-    recall = true_positives / (actual_positives + tf.keras.backend.epsilon())
-
-    f1 = 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
-    return f1
-
-
-def nde_metric(y_true, y_pred):
-    """
-    Calculates the Normalized Disaggregation Error (NDE) for NILM tasks.
-
-    NDE = sqrt(sum((y_true - y_pred)^2) / sum(y_true^2))
-    """
-    numerator = tf.reduce_sum(tf.square(y_true - y_pred))
-    denominator = tf.reduce_sum(tf.square(y_true))
-    return tf.sqrt(numerator / (denominator + tf.keras.backend.epsilon()))
-
-
-def custom_nilm_loss(y_true, y_pred):
-    """
-    Candidate loss function that combines NDE and MSE to be more focused on the NILM domain.
-    """
-
-    # Normalized Disaggregation Error (modified for numerical stability)
-    numerator = tf.reduce_sum(tf.square(y_true - y_pred))
-    denominator = tf.reduce_sum(tf.square(y_true))
-    nde = tf.sqrt(numerator / (denominator + tf.keras.backend.epsilon()))
-
-    # Adding more components here? ex: a penalty for negative predictions
-    non_negative_penalty = tf.reduce_mean(tf.maximum(-y_pred, 0))
-
-    # Mean Squared Error
-    mse = tf.keras.losses.mean_squared_error(y_true, y_pred)
-
-    # Combine the loss components TODO: Adjust the weights
-    total_loss = mse + 0.5 * nde + 0.1 * non_negative_penalty
-
-    return total_loss
-
 
 # Initialize WandB for tracking
 
@@ -128,7 +47,7 @@ wandb.init(
         "num_heads": 2,
         "n_layers": 2,
         "dropout": 0.1,
-        "learning_rate": 1e-4,
+        "learning_rate": 1e-5,
         "epochs": 10,
         "optimizer": "adam",
         "tau": 1.0,
@@ -163,11 +82,18 @@ timeSeriesHelper = TimeSeriesHelper(dataset, wandb_config.window_size, wandb_con
                                     on_threshold=wandb_config.on_threshold)
 
 # After creating the TimeSeriesHelper
+# After creating your data generators
 train_gen = timeSeriesHelper.getTrainingDataGenerator()
-X_sample, y_sample = train_gen[0]
-print(f"Sample batch shapes - X: {X_sample.shape}, y: {y_sample.shape}")
+X_batch, y_batch = train_gen[0]
+print("Sample statistics:")
+print(f"X mean: {np.mean(X_batch)}, std: {np.std(X_batch)}")
+print(f"y mean: {np.mean(y_batch)}, std: {np.std(y_batch)}")
+print(f"X range: [{np.min(X_batch)}, {np.max(X_batch)}]")
+print(f"y range: [{np.min(y_batch)}, {np.max(y_batch)}]")
 
 # Ensure these shapes match
+X_sample, y_sample = train_gen[0]
+print(f"Sample batch shapes - X: {X_sample.shape}, y: {y_sample.shape}")
 assert X_sample.shape == (wandb_config.batch_size, wandb_config.window_size, 1), "Incorrect input shape"
 assert y_sample.shape == (wandb_config.batch_size, wandb_config.window_size, 1), "Incorrect target shape"
 
@@ -182,16 +108,12 @@ bert_model = BERT4NILM(wandb_config)
 # Build the model
 bert_model.build((None, wandb_config.window_size, 1))
 
-# Force the model to process a dummy input to complete initialization
-dummy_input = tf.random.normal((wandb_config.batch_size, wandb_config.window_size, 1))
-dummy_output = bert_model(dummy_input)
-
-# Now you should be able to access and print the output shape
-print(f"Model output shape after dummy input call: {dummy_output.shape}")
-
-
 # Compile the model using the WandB configurations and the custom loss
-optimizer = tf.keras.optimizers.Adam(learning_rate=wandb_config.learning_rate)
+optimizer = tf.keras.optimizers.Adam(
+    learning_rate=wandb_config.learning_rate,
+    clipnorm=1.0,  # gradient clipping
+    clipvalue=0.5
+)
 
 
 # Custom loss wrapper to pass both y and s
@@ -236,20 +158,18 @@ bert_model.compile(
 # Print the model summary
 bert_model.summary()
 
-# Create a dummy input with the appropriate shape
-dummy_input = tf.random.normal((wandb_config.batch_size, wandb_config.window_size, 1))  # (128, 128, 1)
-dummy_output = bert_model(dummy_input)
-
-# Print the shape to verify
-print(f"Model output shape after dummy input call: {dummy_output.shape}")  # Should print (128, 128, 1)
-
+my_callbacks = [
+    WandbCallback(monitor='val_loss', save_model=False),
+    GradientDebugCallback(),
+    BatchStatsCallback()
+]
 
 # Train the model and track the training process using WandB
 history = bert_model.fit(
     timeSeriesHelper.getTrainingDataGenerator(),
     epochs=wandb_config.epochs,
     validation_data=timeSeriesHelper.getTestDataGenerator(),
-    callbacks=[WandbCallback(monitor='val_loss', save_model=False)]
+    callbacks=my_callbacks
 )
 
 # Finish the WandB run

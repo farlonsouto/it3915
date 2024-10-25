@@ -35,6 +35,8 @@ class BERT4NILM(Model):
         super(BERT4NILM, self).__init__()
         self.args = wandb_config
 
+        self.total_loss = super.total_loss
+
         # Model configuration parameters
         self.original_len = wandb_config.window_size
         self.latent_len = int(self.original_len / 2)

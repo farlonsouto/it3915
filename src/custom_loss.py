@@ -1,6 +1,34 @@
 import tensorflow as tf
-from tensorflow.keras.losses import KLDivergence
-from tensorflow.keras import backend as K
+
+
+def nde_loss(y_true, y_pred):
+    """
+    Modified loss function with better numerical stability
+    """
+    epsilon = 1e-10
+
+    # Cast inputs to float32
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+
+    # Clip predictions to prevent extreme values
+    y_pred = tf.clip_by_value(y_pred, -1e6, 1e6)
+
+    # Normalized Disaggregation Error
+    numerator = tf.reduce_sum(tf.square(y_true - y_pred))
+    denominator = tf.reduce_sum(tf.square(y_true)) + epsilon
+    nde = tf.sqrt(numerator / denominator)
+
+    # Non-negative penalty with clipping
+    non_negative_penalty = tf.reduce_mean(tf.maximum(-y_pred, 0))
+
+    # Mean Squared Error with clipping
+    mse = tf.reduce_mean(tf.square(tf.clip_by_value(y_true - y_pred, -1e6, 1e6)))
+
+    # Combine the loss components with scaled weights
+    total_loss = mse + 0.1 * nde + 0.01 * non_negative_penalty
+
+    return tf.clip_by_value(total_loss, 0.0, 1e6)
 
 
 def bert4nilm_loss(y_ground_truth, y_predicted, s_ground_truth, s_predicted, tau=1.0, lambda_val=0.1):
