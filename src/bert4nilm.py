@@ -16,20 +16,16 @@ class LearnedL2NormPooling(layers.Layer):
         )
 
     def call(self, inputs, **kwargs):
-        # Ensure input is 3D for Conv1D/Pooling, (batch_size, timesteps, channels)
         if inputs.shape.ndims == 4:
             inputs = tf.squeeze(inputs, axis=-2)  # Remove the extra dimension if present
 
         squared_inputs = tf.square(inputs)
-
-        # Perform average pooling with 1D pooling (3D input: batch_size, timesteps, channels)
         pooled = tf.nn.avg_pool1d(
             squared_inputs,
-            ksize=self.pool_size,  # Pooling size over the time dimension
+            ksize=self.pool_size,
             strides=self.pool_size,
             padding='VALID'
         )
-
         weighted_pooled = pooled * self.weight
         return tf.sqrt(weighted_pooled)
 
@@ -39,10 +35,10 @@ class BERT4NILM(Model):
         super(BERT4NILM, self).__init__()
         self.args = wandb_config
 
+        # Model configuration parameters
         self.original_len = wandb_config.window_size
         self.latent_len = int(self.original_len / 2)
         self.dropout_rate = wandb_config.dropout
-        self.batch_size = wandb_config.batch_size
         self.hidden = wandb_config.head_size
         self.heads = wandb_config.num_heads
         self.n_layers = wandb_config.n_layers
@@ -57,7 +53,7 @@ class BERT4NILM(Model):
         self.kernel_regularizer = self.get_regularizer(wandb_config.kernel_regularizer)
         self.bias_regularizer = self.get_regularizer(wandb_config.bias_regularizer)
 
-        # Convolution and pooling layers
+        # Convolutional layers and learned pooling
         self.conv = layers.Conv1D(
             filters=self.hidden,
             kernel_size=self.conv_kernel_size,
@@ -70,22 +66,20 @@ class BERT4NILM(Model):
         )
         self.pool = LearnedL2NormPooling()
 
-        # Positional embedding (learnable)
+        # Positional embeddings and dropout layer
         self.position = layers.Embedding(
             input_dim=self.latent_len,
             output_dim=self.hidden,
             embeddings_initializer=self.kernel_initializer
         )
-
-        # Dropout layer
         self.dropout = layers.Dropout(self.dropout_rate)
 
-        # Transformer Encoder blocks
+        # Transformer encoder blocks
         self.transformer_blocks = [
             self.build_transformer_block() for _ in range(self.n_layers)
         ]
 
-        # Deconvolution (Conv1DTranspose), and dense layers for final prediction
+        # Deconvolution and final dense layer
         self.deconv = layers.Conv1DTranspose(
             filters=self.hidden,
             kernel_size=self.deconv_kernel_size,
@@ -96,16 +90,9 @@ class BERT4NILM(Model):
             kernel_regularizer=self.kernel_regularizer,
             bias_regularizer=self.bias_regularizer
         )
-        self.linear1 = layers.Dense(
-            128,
-            activation='tanh',
-            kernel_initializer=self.kernel_initializer,
-            bias_initializer=self.bias_initializer,
-            kernel_regularizer=self.kernel_regularizer,
-            bias_regularizer=self.bias_regularizer
-        )
-        self.linear2 = layers.Dense(
-            self.output_size,
+        # This final dense layer outputs a value for each time step in the sequence
+        self.output_layer = layers.Dense(
+            1,
             kernel_initializer=self.kernel_initializer,
             bias_initializer=self.bias_initializer,
             kernel_regularizer=self.kernel_regularizer,
@@ -158,8 +145,10 @@ class BERT4NILM(Model):
         return Model(inputs, ff_output)
 
     def call(self, inputs, training=None, mask=None):
+        # Initial convolution and pooling
         x_token = self.pool(self.conv(tf.expand_dims(inputs, axis=-1)))
 
+        # Add positional encoding and apply dropout
         positions = tf.range(start=0, limit=tf.shape(x_token)[1], delta=1)
         embedding = x_token + self.position(positions)
 
@@ -169,9 +158,12 @@ class BERT4NILM(Model):
 
         x = self.dropout(embedding, training=training)
 
+        # Pass through transformer encoder blocks
         for transformer in self.transformer_blocks:
             x = transformer(x, training=training)
 
+        # Deconvolution and final dense layer for each timestep in sequence
         x = self.deconv(x)
-        x = self.linear1(x)
-        return self.linear2(x)
+        y_pred = self.output_layer(x)  # Shape: (batch_size, window_size, 1)
+        print(f"Model output shape: {y_pred.shape}")
+        return y_pred  # Return the prediction for each timestep in the sequence

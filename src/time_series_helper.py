@@ -148,5 +148,8 @@ class TimeSeriesGenerator(Sequence):
     def __getitem__(self, index):
         batch_indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
         X = np.array([self.mains_series[i:i + self.window_size] for i in batch_indexes])
-        y = np.array([self.appliance_series[i + self.window_size] for i in batch_indexes])
+        y = np.array([self.appliance_series[i:i + self.window_size] for i in batch_indexes])
+        # Ensure y has the shape (batch_size, window_size, 1)
+        y = y.reshape(self.batch_size, self.window_size, 1)
+        print(f"TimeSeriesGenerator getItem method: X shape: {X.shape}, y shape: {y.shape}")
         return X, y
