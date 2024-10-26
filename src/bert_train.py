@@ -5,7 +5,6 @@ from nilmtk import DataSet
 from wandb.integration.keras import WandbCallback
 
 from bert4nilm import BERT4NILM
-from custom_callbacks import BatchStatsCallback, GradientDebugCallback
 from custom_loss import bert4nilm_loss
 from custom_metrics import mre_metric, f1_score, nde_metric
 from time_series_helper import TimeSeriesHelper
@@ -159,9 +158,9 @@ bert_model.compile(
 bert_model.summary()
 
 my_callbacks = [
-    WandbCallback(monitor='val_loss', save_model=False),
-    GradientDebugCallback(),
-    BatchStatsCallback()
+    WandbCallback(monitor='val_loss', save_model=False)
+    # , GradientDebugCallback()
+    # , BatchStatsCallback()
 ]
 
 # Train the model and track the training process using WandB

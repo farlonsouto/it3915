@@ -3,39 +3,44 @@ from tensorflow.keras import layers, Model, regularizers
 
 
 class LearnedL2NormPooling(layers.Layer):
-    def __init__(self, pool_size=2, **kwargs):
+    def __init__(self, pool_size=2, epsilon=1e-6, **kwargs):
         super(LearnedL2NormPooling, self).__init__(**kwargs)
         self.pool_size = pool_size
+        self.epsilon = epsilon  # Small value to prevent NaN issues
 
     def build(self, input_shape):
         self.weight = self.add_weight(
             name='l2_norm_weight',
-            shape=(1, 1, input_shape[-1]),  # Last dimension is the channel dimension
+            shape=(1, 1, input_shape[-1]),
             initializer='ones',
             trainable=True
         )
 
     def call(self, inputs, **kwargs):
         if inputs.shape.ndims == 4:
-            inputs = tf.squeeze(inputs, axis=-2)  # Remove the extra dimension if present
+            inputs = tf.squeeze(inputs, axis=-2)
 
         squared_inputs = tf.square(inputs)
+
+        # Average pooling with stability epsilon
         pooled = tf.nn.avg_pool1d(
             squared_inputs,
             ksize=self.pool_size,
             strides=self.pool_size,
             padding='VALID'
         )
+
         weighted_pooled = pooled * self.weight
-        return tf.sqrt(weighted_pooled)
+
+        # Adding epsilon to avoid NaNs in the sqrt operation
+        return tf.sqrt(weighted_pooled + self.epsilon)
+
 
 
 class BERT4NILM(Model):
     def __init__(self, wandb_config):
         super(BERT4NILM, self).__init__()
         self.args = wandb_config
-
-        self.total_loss = super.total_loss
 
         # Model configuration parameters
         self.original_len = wandb_config.window_size
@@ -167,5 +172,37 @@ class BERT4NILM(Model):
         # Deconvolution and final dense layer for each timestep in sequence
         x = self.deconv(x)
         y_pred = self.output_layer(x)  # Shape: (batch_size, window_size, 1)
-        print(f"Model output shape: {y_pred.shape}")
         return y_pred  # Return the prediction for each timestep in the sequence
+
+    def train_step(self, data):
+        # Unpack the data
+        x, y = data
+
+        # Forward pass with GradientTape
+        with tf.GradientTape() as tape:
+            y_pred = self(x, training=True)
+            loss = self.compiled_loss(y, y_pred, regularization_losses=self.losses)
+
+        # Calculate gradients
+        gradients = tape.gradient(loss, self.trainable_variables)
+
+        # Check for NaNs in gradients using check_numerics
+        for i, grad in enumerate(gradients):
+            if grad is not None:
+                try:
+                    tf.debugging.check_numerics(grad,
+                                                f"NaN or Inf detected in gradient of variable {self.trainable_variables[i].name}")
+                except tf.errors.InvalidArgumentError:
+                    tf.print(f"NaN or Inf detected in gradient of variable {self.trainable_variables[i].name}")
+                    raise
+
+        # Apply gradients
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        # Update and return metrics
+        self.compiled_metrics.update_state(y, y_pred)
+        return {m.name: m.result() for m in self.metrics}
+
+
+
+

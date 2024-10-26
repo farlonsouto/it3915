@@ -19,23 +19,30 @@ class GradientDebugCallback(tf.keras.callbacks.Callback):
 
 
 class BatchStatsCallback(tf.keras.callbacks.Callback):
-    def on_batch_end(self, batch, logs=None):
+    def on_train_batch_end(self, batch, logs=None):
         logs = logs or {}
 
-        # Print the batch loss from logs
+        # Print batch loss
         if 'loss' in logs:
             print(f"Batch {batch} - Loss: {logs['loss']}")
 
-        # Compute gradients using GradientTape within the callback
-        with tf.GradientTape() as tape:
-            # Re-run the forward pass to compute gradients
-            predictions = self.model(self.model.train_function.inputs[0], training=True)
-            loss = self.model.compiled_loss(
-                self.model.train_function.inputs[1], predictions, regularization_losses=self.model.losses)
+        try:
+            # Access the inputs and labels of the current batch within a GradientTape
+            with tf.GradientTape() as tape:
+                inputs, labels = self.model._current_inputs, self.model._current_labels
+                predictions = self.model(inputs, training=True)  # Forward pass
+                loss = self.model.compiled_loss(labels, predictions, regularization_losses=self.model.losses)
 
-        gradients = tape.gradient(loss, self.model.trainable_variables)
+            # Compute gradients
+            gradients = tape.gradient(loss, self.model.trainable_variables)
 
-        # Check for NaNs in the gradients
-        for i, grad in enumerate(gradients):
-            if tf.reduce_any(tf.math.is_nan(grad)):
-                print(f"NaN gradient detected in batch {batch} for gradient {i}")
+            # Check for NaNs in gradients
+            for i, grad in enumerate(gradients):
+                if grad is not None and tf.reduce_any(tf.math.is_nan(grad)):
+                    print(f"NaN gradient detected in batch {batch} for gradient {i}")
+
+        except Exception as e:
+            print(f"Error in BatchStatsCallback on batch {batch}: {e}")
+
+
+
