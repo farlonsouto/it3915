@@ -36,7 +36,6 @@ class LearnedL2NormPooling(layers.Layer):
         return tf.sqrt(weighted_pooled + self.epsilon)
 
 
-
 class BERT4NILM(Model):
     def __init__(self, wandb_config):
         super(BERT4NILM, self).__init__()
@@ -48,7 +47,7 @@ class BERT4NILM(Model):
         self.dropout_rate = wandb_config.dropout
         self.hidden = wandb_config.head_size
         self.heads = wandb_config.num_heads
-        self.n_layers = wandb_config.n_layers
+        self.n_transformer_blocks = wandb_config.n_layers
         self.output_size = wandb_config.output_size
         self.masking_portion = wandb_config.masking_portion
         self.conv_kernel_size = wandb_config.conv_kernel_size
@@ -83,7 +82,7 @@ class BERT4NILM(Model):
 
         # Transformer encoder blocks
         self.transformer_blocks = [
-            self.build_transformer_block() for _ in range(self.n_layers)
+            self.build_transformer_block() for _ in range(self.n_transformer_blocks)
         ]
 
         # Deconvolution and final dense layer
@@ -202,7 +201,3 @@ class BERT4NILM(Model):
         # Update and return metrics
         self.compiled_metrics.update_state(y, y_pred)
         return {m.name: m.result() for m in self.metrics}
-
-
-
-
