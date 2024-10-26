@@ -5,7 +5,7 @@ from nilmtk import DataSet
 from wandb.integration.keras import WandbCallback
 
 from bert4nilm import BERT4NILM
-from custom_loss import bert4nilm_loss
+from custom_loss import bert4nilm_loss, nde_loss
 from custom_metrics import mre_metric, f1_score, nde_metric
 from time_series_helper import TimeSeriesHelper
 
@@ -37,7 +37,7 @@ if gpus:
 wandb.init(
     project="nilm_bert_transformer",
     config={
-        "loss": "mse",
+        "loss": "nde_loss",
         # "loss": "bert4nilm_loss",
         "on_threshold": 2000,
         "window_size": 128,
@@ -59,8 +59,8 @@ wandb.init(
         "pooling_type": "max",  # Options: 'max', 'average'
         "conv_activation": "relu",
         "dense_activation": "tanh",
-        "conv_filters": 128,  # Now separate from head_size
-        "ff_dim": 512,  # Feed-forward network dimension
+        "conv_filters": 128,  # separate from head_size
+        "ff_dim": 256,  # Feed-forward network dimension
         "layer_norm_epsilon": 1e-6,
         "kernel_initializer": "glorot_uniform",
         "bias_initializer": "zeros",
@@ -133,7 +133,7 @@ def custom_loss_wrapper(y_true, y_pred):
 loss_fn_mapping = {
     "mse": tf.keras.losses.MeanSquaredError(),
     "mae": tf.keras.losses.MeanAbsoluteError(),
-    "huber": tf.keras.losses.Huber(),  # Example of an additional loss function
+    "nde_loss": nde_loss,  # Example of an additional loss function
 }
 
 # Get the loss function from the WandB config
@@ -156,6 +156,10 @@ bert_model.compile(
 
 # Print the model summary
 bert_model.summary()
+
+# TODO WARNING WandbCallback is deprecated and will be removed in a future release.
+#  Please use the WandbMetricsLogger, WandbModelCheckpoint, and WandbEvalCallback callbacks instead.
+#  See https://docs.wandb.ai/guides/integrations/keras for more information.
 
 my_callbacks = [
     WandbCallback(monitor='val_loss', save_model=False)

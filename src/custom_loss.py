@@ -3,7 +3,8 @@ import tensorflow as tf
 
 def nde_loss(y_true, y_pred):
     """
-    Modified loss function with better numerical stability
+    Normalized Disaggregation Error
+    TODO: Remove epsilon that prevents division by zero?
     """
     epsilon = 1e-10
 
