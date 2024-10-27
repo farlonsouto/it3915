@@ -27,7 +27,7 @@ def list_appliances(data: DataSet, building_number: int):
 # Example usage:
 data_set_file_path = '../datasets/ukdale.h5'
 
-building = 1
+building = 5
 appliances_to_plot = ['fridge', 'microwave', 'dishwasher']
 
 if len(sys.argv) > 1:

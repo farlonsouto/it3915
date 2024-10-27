@@ -63,6 +63,7 @@ class TimeSeriesHelper:
 
         try:
             # Process Building 1 (training data)
+            # TODO: Fixed on building 1 (one), always, for training purposes. No particular reason.
             building = 1
             train_elec = self.dataset.buildings[building].elec
             train_mains = train_elec.mains()
@@ -82,6 +83,7 @@ class TimeSeriesHelper:
             train_appliance_list.append(appliance_power)
 
             # Process test data (Building 5)
+            # TODO: Fixed on building 5 (five), always, for testing purposes. No particular reason.
             test_elec = self.dataset.buildings[5].elec
             test_mains = test_elec.mains()
             test_appliance = test_elec[self.appliance]

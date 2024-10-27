@@ -75,7 +75,7 @@ wandb_config = wandb.config
 
 # Load the NILMTK dataset
 dataset = DataSet('../datasets/ukdale.h5')
-dataset.set_window(start='2014-01-01', end='2015-02-15')
+dataset.set_window(start='2014-01-01', end='2015-02-15')   # TODO: Will read from building 1 (one)
 
 # Helper to preprocess time series data
 timeSeriesHelper = TimeSeriesHelper(dataset, wandb_config.window_size, wandb_config.batch_size, appliance='kettle',
