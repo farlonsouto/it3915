@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.python.keras.losses import KLDivergence
 
 
 def nde_loss(y_true, y_pred):
@@ -67,3 +68,4 @@ def bert4nilm_loss(y_ground_truth, y_predicted, s_ground_truth, s_predicted, tau
     total_loss = mse_loss + kl_loss + log_sigmoid_loss + lambda_val * l1_loss
 
     return total_loss
+

@@ -2,7 +2,8 @@ import numpy as np
 import tensorflow as tf
 import wandb
 from nilmtk import DataSet
-from wandb.integration.keras import WandbCallback
+from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+from wandb.integration.keras import WandbCallback, WandbMetricsLogger
 
 from bert4nilm import BERT4NILM
 from custom_loss import bert4nilm_loss, nde_loss
@@ -40,27 +41,27 @@ wandb.init(
         "loss": "nde_loss",
         # "loss": "bert4nilm_loss",
         "on_threshold": 2000,
-        "window_size": 128,
+        "window_size": 64,
         "batch_size": 128,
-        "head_size": 128,
+        "head_size": 64,
         "num_heads": 2,
-        "n_layers": 2,
+        "n_layers": 1,
         "dropout": 0.1,
         "learning_rate": 1e-5,
-        "epochs": 10,
+        "epochs": 2,
         "optimizer": "adam",
         "tau": 1.0,
         "lambda_val": 0.1,
-        "masking_portion": 0.25,
+        "masking_portion": 0.2,
         "output_size": 1,
-        "conv_kernel_size": 4,
-        "deconv_kernel_size": 4,
-        "embedding_dim": 128,
+        "conv_kernel_size": 8,
+        "deconv_kernel_size": 8,
+        "embedding_dim": 64,
         "pooling_type": "max",  # Options: 'max', 'average'
         "conv_activation": "relu",
         "dense_activation": "tanh",
-        "conv_filters": 128,  # separate from head_size
-        "ff_dim": 256,  # Feed-forward network dimension
+        "conv_filters": 32,  # separate from head_size
+        "ff_dim": 128,  # Feed-forward network dimension
         "layer_norm_epsilon": 1e-6,
         "kernel_initializer": "glorot_uniform",
         "bias_initializer": "zeros",
@@ -115,20 +116,6 @@ optimizer = tf.keras.optimizers.Adam(
 )
 
 
-# Custom loss wrapper to pass both y and s
-def custom_loss_wrapper(y_true, y_pred):
-    y_true, s_ground_truth = y_true
-    y_pred, s_predicted = y_pred
-
-    return bert4nilm_loss(
-        y_true, y_pred,
-        s_ground_truth=s_ground_truth,
-        s_predicted=s_predicted,
-        tau=wandb_config.tau,
-        lambda_val=wandb_config.lambda_val
-    )
-
-
 # Mapping the loss function from WandB configuration to TensorFlow's predefined loss functions
 loss_fn_mapping = {
     "mse": tf.keras.losses.MeanSquaredError(),
@@ -157,14 +144,13 @@ bert_model.compile(
 # Print the model summary
 bert_model.summary()
 
-# TODO WARNING WandbCallback is deprecated and will be removed in a future release.
-#  Please use the WandbMetricsLogger, WandbModelCheckpoint, and WandbEvalCallback callbacks instead.
-#  See https://docs.wandb.ai/guides/integrations/keras for more information.
-
 my_callbacks = [
-    WandbCallback(monitor='val_loss', save_model=False)
+    WandbMetricsLogger(log_freq='epoch'),
     # , GradientDebugCallback()
     # , BatchStatsCallback()
+    EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
+    ModelCheckpoint('../models/bert_model.keras', save_best_only=True, monitor='val_loss'),
+    TensorBoard(log_dir='../logs')
 ]
 
 # Train the model and track the training process using WandB
