@@ -61,7 +61,7 @@ bert_model.summary()
 
 # Load the dataset
 dataset = DataSet('../datasets/ukdale.h5')
-dataset.set_window(start='2014-01-20', end='2015-02-10')  # TODO: Will read from building 5 (five)
+dataset.set_window(start='2014-01-20', end='2015-02-10')  # TODO: Read from building 2 (two)
 
 # Initialize the TimeSeriesHelper to preprocess the test data
 timeSeriesHelper = TimeSeriesHelper(

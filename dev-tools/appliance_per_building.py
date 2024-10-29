@@ -22,34 +22,44 @@ def list_appliances(data: DataSet, building_number: int):
     print(f"Available appliances in building {building_number}:")
     for appliance in appliances_list:
         print(appliance)
+    return appliances_list
+
+
+# Function to plot specific appliances if available
+def plot_appliance(data, building_number, appliance_name):
+    elec = data.buildings[building_number].elec
+    try:
+        meter = elec[appliance_name]
+        print(f"Plotting data for {appliance_name} in Building {building_number}")
+        meter.plot()
+        plt.title(f"{appliance_name} - Building {building_number}")
+        plt.xlabel("Time")
+        plt.ylabel("Power (W)")
+        plt.show()
+    except KeyError:
+        print(f"{appliance_name} not available in Building {building_number}")
 
 
 # Example usage:
 data_set_file_path = '../datasets/ukdale.h5'
-
-building = 5
-appliances_to_plot = ['fridge', 'microwave', 'dishwasher']
+appliances_to_plot = ['kettle', 'microwave', 'dishwasher']
 
 if len(sys.argv) > 1:
     data_set_file_path = sys.argv[1]
-if len(sys.argv) > 2:
-    building = int(sys.argv[2])
 
 my_dataset = DataSet(data_set_file_path)
-my_dataset.set_window(start='2014-04-21', end='2014-04-22')
+my_dataset.set_window(start='2014-01-01', end='2016-04-22')
 
-# List all available appliances in the selected building
-list_appliances(my_dataset, building)
+# Loop through buildings
+for building_number in my_dataset.buildings.keys():
+    print(f"\nProcessing Building {building_number}")
 
-elec = my_dataset.buildings[building].elec
+    # List all available appliances in the selected building
+    available_appliances = list_appliances(my_dataset, building_number)
 
-# Suppress warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", message="Multiple appliances")
-
-    # Try plotting the entire dataset
-    elec.plot()
-    plt.xlabel("Time")
-    plt.show()
+    # Plot specified appliances if available
+    for appliance in appliances_to_plot:
+        if appliance in available_appliances:
+            plot_appliance(my_dataset, building_number, appliance)
 
 print("Finished processing the dataset")

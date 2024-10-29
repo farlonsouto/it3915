@@ -5,6 +5,19 @@ from tensorflow.keras.utils import Sequence
 
 
 class TimeSeriesHelper:
+    """
+    Encapsulates UK Dale dataset handling intelligence.
+
+    Data are available for each house as follows:
+    House 1: start 09/11/2012, end 26/04/2017
+    House 2: start 17/02/2013, end 10/10/2013
+    House 3: start 27/02/2013, end 08/04/2013
+    House 4: start 09/03/2013, end 01/10/2013
+    House 5: start 29/06/2014, end 13/11/2014
+
+
+    """
+
     def __init__(self, dataset: DataSet, window_size: int, batch_size: int, appliance: str, on_threshold: float):
         self.dataset = dataset
         self.window_size = window_size
@@ -24,8 +37,16 @@ class TimeSeriesHelper:
         print(f"Processing {'training' if is_training else 'test'} data from building {building_num}")
 
         # Extract power readings
-        mains_power = mains_df['power']['active']
-        appliance_power = appliance_df['power']['active']
+        if ('power', 'active') in mains_df.columns:
+            mains_power = mains_df[('power', 'active')]
+        elif 'power' in mains_df.columns:  # Se "power" estiver no formato de coluna simples
+            mains_power = mains_df['power']
+        else:
+            raise KeyError(
+                f"The column 'power' was not found inside mains_df for the building {building_num}. Available columns "
+                f"are: {mains_df.columns}")
+
+        appliance_power = appliance_df[('power', 'active')]
 
         # Handle missing values in mains power
         mains_power = mains_power.fillna(method='ffill').fillna(method='bfill')
@@ -33,7 +54,7 @@ class TimeSeriesHelper:
         # Handle missing values in appliance power - fill with zeros as appliances are usually off
         appliance_power = appliance_power.fillna(0)
 
-        # ** Remove duplicates before resampling **
+        # Remove duplicates before resampling
         mains_power = mains_power[~mains_power.index.duplicated(keep='first')]
         appliance_power = appliance_power[~appliance_power.index.duplicated(keep='first')]
 
@@ -62,38 +83,39 @@ class TimeSeriesHelper:
         train_appliance_list = []
 
         try:
-            # Process Building 1 (training data)
-            # TODO: Fixed on building 1 (one), always, for training purposes. No particular reason.
-            building = 1
-            train_elec = self.dataset.buildings[building].elec
-            train_mains = train_elec.mains()
-            train_appliance = train_elec[self.appliance]
+            # Buildings 1, 3, 4, 5 for training
+            train_buildings = [1, 3, 4, 5]
+            for building in train_buildings:
+                train_elec = self.dataset.buildings[building].elec
+                train_mains = train_elec.mains()
+                train_appliance = train_elec[self.appliance]
 
-            train_mains_df = next(train_mains.load())
-            train_appliance_df = next(train_appliance.load())
+                train_mains_df = next(train_mains.load())
+                train_appliance_df = next(train_appliance.load())
 
-            mains_power, appliance_power = self._handle_timeseries(
-                train_mains_df,
-                train_appliance_df,
-                building,
-                is_training=True
-            )
+                mains_power, appliance_power = self._handle_timeseries(
+                    train_mains_df,
+                    train_appliance_df,
+                    building,
+                    is_training=True
+                )
 
-            train_mains_list.append(mains_power)
-            train_appliance_list.append(appliance_power)
+                train_mains_list.append(mains_power)
+                train_appliance_list.append(appliance_power)
 
-            # Process test data (Building 5)
-            # TODO: Fixed on building 5 (five), always, for testing purposes. No particular reason.
-            test_elec = self.dataset.buildings[5].elec
+            # Building 2 for testing
+            test_building = 2
+            test_elec = self.dataset.buildings[test_building].elec
             test_mains = test_elec.mains()
             test_appliance = test_elec[self.appliance]
+
             test_mains_df = next(test_mains.load())
             test_appliance_df = next(test_appliance.load())
 
             test_mains_power, test_appliance_power = self._handle_timeseries(
                 test_mains_df,
                 test_appliance_df,
-                5,
+                test_building,
                 is_training=False
             )
 

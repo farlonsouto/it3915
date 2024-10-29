@@ -20,14 +20,14 @@ wandb.init(
     project="nilm_bert_transformer",
     config={
         "appliance": "kettle",
-        "loss": "nde_loss",
+        "loss": "mae",
         # "loss": "bert4nilm_loss",
         "on_threshold": 2000,
         "window_size": 64,
-        "batch_size": 128,
-        "head_size": 64,
+        "batch_size": 64,
+        "head_size": 32,
         "num_heads": 2,
-        "n_layers": 1,
+        "n_layers": 2,
         "dropout": 0.1,
         "learning_rate": 1e-5,
         "epochs": 2,
@@ -36,14 +36,13 @@ wandb.init(
         "lambda_val": 0.1,
         "masking_portion": 0.2,
         "output_size": 1,
-        "conv_kernel_size": 8,
-        "deconv_kernel_size": 8,
+        "conv_kernel_size": 64,
+        "deconv_kernel_size": 64,
         "embedding_dim": 64,
         "pooling_type": "max",  # Options: 'max', 'average'
         "conv_activation": "relu",
         "dense_activation": "tanh",
-        "conv_filters": 32,  # separate from head_size
-        "ff_dim": 128,  # Feed-forward network dimension
+        "ff_dim": 64,  # Feed-forward network dimension
         "layer_norm_epsilon": 1e-6,
         "kernel_initializer": "glorot_uniform",
         "bias_initializer": "zeros",
@@ -51,6 +50,8 @@ wandb.init(
         "bias_regularizer": None,  # Options: None, 'l1', 'l2', 'l1_l2'
     }
 )
+
+# TODO: Create a compact configuration and the keep the original configuration as well
 
 # Retrieve the configuration from WandB
 wandb_config = wandb.config

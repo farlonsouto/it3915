@@ -4,19 +4,19 @@ import wandb
 from nilmtk import DataSet
 from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from wandb.integration.keras import WandbMetricsLogger
-from gpu_memory_allocation import set_gpu_memory_growth
 
 from bert4nilm import BERT4NILM
 from bert_wandb_init import wandb_config
 from custom_loss import nde_loss
 from custom_metrics import mre_metric, f1_score, nde_metric
+from gpu_memory_allocation import set_gpu_memory_growth
 from time_series_helper import TimeSeriesHelper
 
 set_gpu_memory_growth()
 
 # Load the NILMTK dataset
 dataset = DataSet('../datasets/ukdale.h5')
-dataset.set_window(start='2014-01-01', end='2015-02-15')  # TODO: Will read from building 1 (one)
+dataset.set_window(start='2014-01-01', end='2015-02-15')
 
 # Helper to preprocess time series data
 timeSeriesHelper = TimeSeriesHelper(dataset, wandb_config.window_size, wandb_config.batch_size,
