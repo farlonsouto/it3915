@@ -99,11 +99,14 @@ class TimeSeriesDataGenerator(Sequence):
             mains_window = self.data['mains'].iloc[i:i + self.window_size].values
             appliance_window = self.data['appliance'].iloc[i:i + self.window_size].values
 
-            mains_window = (mains_window - self.mean_power) / (self.std_power + 1e-8)
+            # Normalize and reshape to add the third dimension for the feature
+            mains_window = ((mains_window - self.mean_power) / (self.std_power + 1e-8)).reshape(-1, 1)
+            appliance_window = appliance_window.reshape(-1, 1)
 
             batch_X.append(mains_window)
             batch_y.append(appliance_window)
 
+        # Convert to NumPy arrays and ensure the shape is (batch_size, window_size, 1)
         return np.array(batch_X), np.array(batch_y)
 
 
