@@ -32,16 +32,12 @@ class TimeSeries:
         mains_data = next(mains.load())
         appliance_data = next(appliance_meter.load())
 
-        # Ensure both DataFrames have the same index
-        common_index = mains_data.index.intersection(appliance_data.index)
-        mains_data = mains_data.loc[common_index]
-        appliance_data = appliance_data.loc[common_index]
+        # Ensure both DataFrames have the same unique index
+        common_index = mains_data.index.intersection(appliance_data.index).unique()
+        mains_data = mains_data.loc[common_index].dropna()
+        appliance_data = appliance_data.loc[common_index].dropna()
 
-        # Active Power is the actual power which is really transferred to the load such as transformer, induction motors,
-        # generators etc. and dissipated in the circuit.  Denoted by (P) and measured in units of Watts (W) i.e. The unit
-        # of Real or Active power is Watt where 1W = 1V x 1 A.
-
-        # Extract 'power' column if it exists, otherwise use the first column
+        # Extract 'active' column
         mains_power = mains_data['power']['active']
         appliance_power = appliance_data['power']['active']
 

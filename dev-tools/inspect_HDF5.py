@@ -2,7 +2,7 @@ from nilmtk import DataSet
 from nilmtk.utils import print_dict
 
 
-def inspect_dataset(file_path: str, target_appliance: str = "kettle"):
+def inspect_dataset(file_path: str, target_appliances: list):
     # Load the dataset
     dataset = DataSet(file_path)
 
@@ -21,7 +21,7 @@ def inspect_dataset(file_path: str, target_appliance: str = "kettle"):
 
             # Obtains aDataFrame
             for dataFrame in data_frames_generator:
-                df = dataFrame #.fillna(method='ffill').fillna(method='bfill')
+                df = dataFrame  # .fillna(method='ffill').fillna(method='bfill')
                 # Display structure information
                 # Will ignore meters with no appliances attached to it
                 if not df.empty:
@@ -32,7 +32,12 @@ def inspect_dataset(file_path: str, target_appliance: str = "kettle"):
                     elif len(meter.appliances) > 0:
                         appliance_name = meter.appliances[0].label()
 
-                    if meter.is_site_meter() or (target_appliance in appliance_name):
+                    is_target_appliance = False
+                    for app in target_appliances:
+                        if app in appliance_name:
+                            is_target_appliance = True
+
+                    if meter.is_site_meter() or is_target_appliance:
                         print(f"\n  Appliance [{appliance_name}] :")
                         print(f"  Shape: {df.shape}")
                         print(f"  Columns: {df.columns.tolist()}")
@@ -49,4 +54,4 @@ def inspect_dataset(file_path: str, target_appliance: str = "kettle"):
 file_path = "../datasets/AMPds2.h5"  # "../datasets/ukdale.h5"  # Change this to your actual file path
 
 # Inspect the dataset
-inspect_dataset(file_path)
+inspect_dataset(file_path, ["kettle", "fridge"])
