@@ -4,7 +4,7 @@ from wandb.integration.keras import WandbCallback
 
 import wandb
 from soft_dtw_loss_wrapper import DynamicTimeWarping
-from time_series_helper import TimeSeriesHelper
+from time_series_manager import TimeSeries
 from transformer import Transformer
 
 
@@ -38,7 +38,7 @@ config = wandb.config
 dataset = DataSet('../datasets/ukdale.h5')
 dataset.set_window(start='2014-01-01', end='2015-02-15')
 
-timeSeriesHelper = TimeSeriesHelper(dataset, config.window_size, config.batch_size)
+timeSeriesHelper = TimeSeries(dataset, config.window_size, config.batch_size)
 
 # Instantiate the Transformer model
 transformer_model = Transformer(

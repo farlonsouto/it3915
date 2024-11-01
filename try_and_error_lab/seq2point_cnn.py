@@ -4,7 +4,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler, TensorBoard
 import numpy as np
-from time_series_helper import TimeSeriesHelper
+from time_series_manager import TimeSeries
 from tensorflow.keras.mixed_precision import set_global_policy, Policy
 from tensorflow.keras import backend as tfk_backend
 
