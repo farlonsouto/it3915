@@ -1,5 +1,5 @@
 import sys
-import warnings
+
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from nilmtk import DataSet
@@ -48,7 +48,6 @@ if len(sys.argv) > 1:
     data_set_file_path = sys.argv[1]
 
 my_dataset = DataSet(data_set_file_path)
-my_dataset.set_window(start='2014-01-01', end='2016-04-22')
 
 # Loop through buildings
 for building_number in my_dataset.buildings.keys():
