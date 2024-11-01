@@ -19,12 +19,12 @@ import wandb
 wandb.init(
     project="nilm_bert_transformer",
     config={
-        "appliance": "kettle",
+        "appliance": "fridge",
         "loss": "mae",
         # "loss": "bert4nilm_loss",
         "on_threshold": 2000,
         "window_size": 64,
-        "batch_size": 64,
+        "batch_size": 128,
         "head_size": 32,
         "num_heads": 2,
         "n_layers": 2,

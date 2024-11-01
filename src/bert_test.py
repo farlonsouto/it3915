@@ -7,7 +7,7 @@ from bert_wandb_init import wandb_config
 from custom_loss import nde_loss
 from custom_metrics import mre_metric, f1_score, nde_metric
 from gpu_memory_allocation import set_gpu_memory_growth
-from time_series_helper import TimeSeriesHelper
+from time_series_UKDale import TimeSeries
 
 set_gpu_memory_growth()
 
@@ -61,16 +61,10 @@ bert_model.summary()
 
 # Load the dataset
 dataset = DataSet('../datasets/ukdale.h5')
-dataset.set_window(start='2014-01-20', end='2015-02-10')  # TODO: Read from building 2 (two)
 
 # Initialize the TimeSeriesHelper to preprocess the test data
-timeSeriesHelper = TimeSeriesHelper(
-    dataset,
-    window_size=wandb_config.window_size,
-    batch_size=wandb_config.batch_size,
-    appliance=wandb_config.appliance,
-    on_threshold=wandb_config.on_threshold
-)
+timeSeriesHelper = TimeSeries(dataset, [1, 3, 4, 5], [2], wandb_config.window_size,
+                              wandb_config.batch_size, wandb_config.appliance, 2000)
 
 # Load the test data generator
 test_gen = timeSeriesHelper.getTestDataGenerator()
