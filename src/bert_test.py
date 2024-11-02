@@ -7,7 +7,7 @@ from bert_wandb_init import wandb_config
 from custom_loss import nde_loss
 from custom_metrics import mre_metric, f1_score, nde_metric
 from gpu_memory_allocation import set_gpu_memory_growth
-from time_series_ampds2 import TimeSeries
+from time_series_uk_dale import TimeSeries
 
 set_gpu_memory_growth()
 
@@ -63,14 +63,12 @@ bert_model.summary()
 dataset = DataSet('../datasets/ukdale.h5')
 
 # time series handler for the UK Dale dataset
-# timeSeries = TimeSeries(dataset, [1], [1],
-#                        wandb_config.window_size, wandb_config.batch_size,
-#                        appliance=wandb_config.appliance,
-#                        on_threshold=wandb_config.on_threshold)
+timeSeries = TimeSeries(dataset, [2], [2], wandb_config.window_size, wandb_config.batch_size,
+                        appliance=wandb_config.appliance, on_threshold=wandb_config.on_threshold)
 
 # time series handler for the AMPds2dataset
-timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,
-                        appliance=wandb_config.appliance)
+# timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,
+#                         appliance=wandb_config.appliance)
 
 # Load the test data generator
 test_gen = timeSeries.getTestDataGenerator()

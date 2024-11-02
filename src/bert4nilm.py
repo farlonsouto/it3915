@@ -27,7 +27,7 @@ class LearnedL2NormPooling(layers.Layer):
             squared_inputs,
             ksize=self.pool_size,
             strides=self.pool_size,
-            padding='VALID'
+            padding='SAME'
         )
 
         weighted_pooled = pooled * self.weight
@@ -96,6 +96,7 @@ class BERT4NILM(Model):
             kernel_regularizer=self.kernel_regularizer,
             bias_regularizer=self.bias_regularizer
         )
+
         # This final dense layer outputs a value for each time step in the sequence
         self.output_layer = layers.Dense(
             1,

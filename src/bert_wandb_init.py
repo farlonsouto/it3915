@@ -19,30 +19,31 @@ import wandb
 wandb.init(
     project="nilm_bert_transformer",
     config={
-        "appliance": "fridge",  # The selected appliance must be the same for training and testing !!
+        "appliance": "kettle",  # The selected appliance must be the same for training and testing !!
+        # "appliance": "fridge", # for the AMPds2 dataset, since kettle is not available
         "loss": "mae",
         # "loss": "bert4nilm_loss",
-        "on_threshold": 2000,
-        "window_size": 128,
-        "batch_size": 32,
-        "head_size": 64,
+        "on_threshold": 2000,  # For UK Dale it makes sense, but for AMPds2 it doesn't mean anything
+        "window_size": 64,  # For AMPds2, size n means n min
+        "batch_size": 16,
+        "head_size": 128,
         "num_heads": 2,
         "n_layers": 2,
         "dropout": 0.1,
         "learning_rate": 1e-4,
-        "epochs": 10,
+        "epochs": 2,
         "optimizer": "adam",
         "tau": 1.0,
         "lambda_val": 0.1,
-        "masking_portion": 0.1,
+        "masking_portion": 0.125,
         "output_size": 1,
-        "conv_kernel_size": 64,
-        "deconv_kernel_size": 64,
-        "embedding_dim": 64,
+        "conv_kernel_size": 4,
+        "deconv_kernel_size": 4,
+        "embedding_dim": 128,
         "pooling_type": "max",  # Options: 'max', 'average'
         "conv_activation": "relu",
-        "dense_activation": "tanh",
-        "ff_dim": 64,  # Feed-forward network dimension
+        "dense_activation": "relu",
+        "ff_dim": 128,  # Feed-forward network dimension
         "layer_norm_epsilon": 1e-6,
         "kernel_initializer": "glorot_uniform",
         "bias_initializer": "zeros",

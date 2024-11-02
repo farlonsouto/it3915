@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pandas as pd
 from nilmtk import DataSet
@@ -22,23 +24,17 @@ class TimeSeries:
         self._compute_normalization_params()
 
     def _compute_normalization_params(self):
+
         all_train_mains_power = []
 
         for building in self.training_buildings:
             train_elec = self.dataset.buildings[building].elec
             train_mains = train_elec.mains()
-
-            mains_data_frame = train_mains.load(sample_period=6)
+            mains_data_frame = train_mains.load()
 
             for train_mains_df in mains_data_frame:
-                if not train_mains_df.empty:
-                    if 'power' in train_mains_df.columns:
-                        mains_power = train_mains_df['power']
-                    elif ('power', 'active') in train_mains_df.columns:
-                        mains_power = train_mains_df[('power', 'active')]
-                    else:
-                        mains_power = train_mains_df.iloc[:, 0]
-                    all_train_mains_power.append(mains_power)
+                mains_power = train_mains_df[('power', 'apparent')]
+                all_train_mains_power.append(mains_power)
 
         if all_train_mains_power:
             combined_mains_power = pd.concat(all_train_mains_power, axis=0)
@@ -47,7 +43,7 @@ class TimeSeries:
             print(f"Mean power: {self.mean_power}")
             print(f"Std power: {self.std_power}")
 
-            if self.mean_power.isnull().any() or self.std_power.isnull().any():
+            if math.isnan(self.mean_power) or math.isnan(self.std_power):
                 raise ValueError("Normalization parameters contain NaN values. Check your data preprocessing steps.")
         else:
             raise ValueError("No training data available for normalization.")
@@ -81,7 +77,9 @@ class TimeSeriesDataGenerator(Sequence):
             mains = elec.mains()
             appliance = elec[self.appliance]
             for mains_df, appliance_df in zip(mains.load(chunksize=chunk_size), appliance.load(chunksize=chunk_size)):
-                mains_power, appliance_power = self._process_data(mains_df, appliance_df)
+                mains_power_apparent = mains_df[('power', 'apparent')]
+                appliance_power_active = appliance_df[('power', 'active')]
+                mains_power, appliance_power = self._process_data(mains_power_apparent, appliance_power_active)
                 for i in range(0, len(mains_power) - self.window_size + 1, self.window_size):
                     yield mains_power[i:i + self.window_size], appliance_power[i:i + self.window_size]
 
@@ -112,29 +110,16 @@ class TimeSeriesDataGenerator(Sequence):
 
         return np.array(batch_X), np.array(batch_y)
 
-    def _process_data(self, mains_df, appliance_df):
-        # Extract power readings
-        if 'power' in mains_df.columns:
-            mains_power = mains_df['power']
-        elif ('power', 'active') in mains_df.columns:
-            mains_power = mains_df[('power', 'active')]
-        else:
-            mains_power = mains_df.iloc[:, 0]  # Select the first column if 'power' is not present
+    def _process_data(self, mains_power, appliance_power):
 
-        appliance_power = appliance_df[('power', 'active')]
-        if appliance_power.empty:
-            appliance_power = appliance_df[('power', 'apparent')]
-
-        # Resample to a 6-second interval
-        # mains_power = mains_power.resample('6S').mean()
-        # ppliance_power = appliance_power.resample('6S').mean()
+        mains_power = mains_power.resample('6S').nearest(limit=1)
 
         # Align the series by their indices
         mains_power, appliance_power = mains_power.align(appliance_power, join='inner', axis=0)
 
         # Fill missing values
-        mains_power = mains_power.fillna(method='ffill').fillna(method='bfill')
-        appliance_power = appliance_power.fillna(0)
+        if mains_power.isnull().any():
+            mains_power = mains_power.fillna(method='ffill').fillna(method='bfill')
 
         # Normalize mains power
         mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
