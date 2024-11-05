@@ -10,10 +10,6 @@ def nde_loss(y_true, y_pred):
     The Normalized Disaggregation Error (NDE) as (much as possible as) proposed in 'Deep Neural Networks Applied to
     Energy Disaggregation', by Jack Kelly and William Knottenbelt, published in 2015.
     """
-
-    # TODO: Remove epsilon that, in theory, would prevents division by zero as if it was a good idea?
-    epsilon = 1e-10
-
     # Cast inputs to float32
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)
@@ -23,7 +19,7 @@ def nde_loss(y_true, y_pred):
 
     # Normalized Disaggregation Error
     numerator = tf.reduce_sum(tf.square(y_true - y_pred))
-    denominator = tf.reduce_sum(tf.square(y_true)) + epsilon
+    denominator = tf.reduce_sum(tf.square(y_true))
     nde = tf.sqrt(numerator / denominator)
 
     # Non-negative penalty with clipping
@@ -38,22 +34,24 @@ def nde_loss(y_true, y_pred):
     return tf.clip_by_value(total_loss, 0.0, 1e6)
 
 
-def bert4nilm_loss(y_ground_truth, y_predicted, s_ground_truth, s_predicted, tau=1.0, lambda_val=0.1):
+def bert4nilm_loss(y: tuple, s: tuple):
     """
     Custom loss function as per the equation provided by the paper 'BERT4NILM: A Bidirectional Transformer Model for
     Non-Intrusive Load Monitoring - Zhenrui Yue et. al'.
 
     Arguments:
-    x_ground_truth -- Ground truth values for x.
-    x_predicted -- Predicted values for x (output of the model).
-    s_ground_truth -- Ground truth values for s (confidence or auxiliary predictions).
-    s_predicted -- Predicted values for s (softmax outputs or logits).
-    tau -- Temperature parameter for softmax (default is 1.0).
-    lambda_val -- Regularization constant for the log-sigmoid term (default is 0.1).
+        y -- tuple of (Ground truth values for x, Predicted values for x (model's output)).
+        s -- tuple of (Ground truth on/off state, Predicted on/off state).
 
     Returns:
     loss -- The computed loss value.
     """
+
+    y_ground_truth, y_predicted = y
+    s_ground_truth, s_predicted = s
+
+    tau = 1.0
+    lambda_val = 0.1
 
     # Mean Squared Error (MSE)
     mse_loss = tf.reduce_mean(tf.square(y_predicted - y_ground_truth))
@@ -76,13 +74,13 @@ def bert4nilm_loss(y_ground_truth, y_predicted, s_ground_truth, s_predicted, tau
 
 
 class SoftDtwWrapper(tf.keras.losses.Loss):
-
     """
     TODO: Can't promise plug-and-play for any seq2seq and seq2p approaches, regardless of the underlying architecture.
     Originally, the Dynamic Time Warping equation is not differentiable everywhere. This limitation icompromises the
     gradient descend approach. So the problem is tackled as proposed by Marco Cuturi and Mathieu Blondel in 'Soft-DTW:
     a differentiable loss function for time-series'. In Proceedings of the International Conference on Machine
     Learning, 894–903. JMLR. org, 2017."""
+
     def __init__(self, gamma=1.0, **kwargs):
         super(SoftDtwWrapper, self).__init__(**kwargs)
         self.gamma = gamma

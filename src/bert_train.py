@@ -7,8 +7,7 @@ from wandb.integration.keras import WandbMetricsLogger
 
 from bert4nilm import BERT4NILM
 from bert_wandb_init import wandb_config
-from custom_loss import nde_loss
-from custom_metrics import mre_metric, f1_score, nde_metric
+from custom_metrics import MREMetric, F1ScoreMetric, NDEMetric
 from gpu_memory_allocation import set_gpu_memory_growth
 # from time_series_ampds2 import TimeSeries
 from time_series_uk_dale import TimeSeries
@@ -35,8 +34,7 @@ optimizer = tf.keras.optimizers.Adam(
 # Mapping the loss function from WandB configuration to TensorFlow's predefined loss functions
 loss_fn_mapping = {
     "mse": tf.keras.losses.MeanSquaredError(),
-    "mae": tf.keras.losses.MeanAbsoluteError(),
-    "nde_loss": nde_loss,  # Example of an additional loss function
+    "mae": tf.keras.losses.MeanAbsoluteError()
 }
 
 # Get the loss function from the WandB config
@@ -46,14 +44,14 @@ loss_fn = loss_fn_mapping.get(wandb_config.loss, tf.keras.losses.MeanSquaredErro
 # Compile the model
 bert_model.compile(
     optimizer=optimizer,
-    loss=loss_fn,
+    #    loss=loss_fn, ---- loss function defined inside the model
     metrics=[
         'accuracy',
         tf.keras.metrics.MeanAbsoluteError(name='mae'),
         tf.keras.metrics.MeanSquaredError(name='mse'),
-        mre_metric,
-        f1_score,
-        nde_metric
+        MREMetric(),
+        F1ScoreMetric(),
+        NDEMetric()
     ]
 )
 
@@ -68,11 +66,10 @@ dataset = DataSet(path_to_dataset)
 # time series handler for the UK Dale dataset
 timeSeries = TimeSeries(dataset, [1, 3, 4, 5], [2],
                         wandb_config.window_size, wandb_config.batch_size,
-                        appliance=wandb_config.appliance,
-                        on_threshold=wandb_config.on_threshold)
+                        appliance=wandb_config.appliance)
 
 # time series handler for the AMPds2dataset
-#timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,
+# timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,
 #                        appliance=wandb_config.appliance)
 
 train_gen = timeSeries.getTrainingDataGenerator()

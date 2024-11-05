@@ -12,7 +12,7 @@ class TimeSeries:
     """
 
     def __init__(self, dataset: DataSet, training_buildings: list, test_buildings: list, window_size: int,
-                 batch_size: int, appliance: str, on_threshold: int = 2000):
+                 batch_size: int, appliance: str):
         self.training_buildings = training_buildings
         self.test_buildings = test_buildings
         self.dataset = dataset
@@ -112,12 +112,16 @@ class TimeSeriesDataGenerator(Sequence):
 
     def _process_data(self, mains_power, appliance_power):
 
+        # Drop duplicate indices
+        mains_power = mains_power[~mains_power.index.duplicated(keep='first')]
+
+        # Down sample the aggregated reading to 6s and replace any NaN with the nearest value up to 1 time step away
         mains_power = mains_power.resample('6S').nearest(limit=1)
 
         # Align the series by their indices
         mains_power, appliance_power = mains_power.align(appliance_power, join='inner', axis=0)
 
-        # Fill missing values
+        # Fill missing values, first fw and then bw propagation fill
         if mains_power.isnull().any():
             mains_power = mains_power.fillna(method='ffill').fillna(method='bfill')
 

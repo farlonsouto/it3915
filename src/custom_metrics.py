@@ -1,66 +1,91 @@
 import tensorflow as tf
 
 
-def mre_metric(y_ground_truth, y_prediction):
-    """
-    Modified Mean Relative Error with better numerical stability
-    """
-    y_ground_truth = tf.cast(y_ground_truth, tf.float32)
-    y_prediction = tf.cast(y_prediction, tf.float32)
+class MREMetric(tf.keras.metrics.Metric):
+    def __init__(self, name="mre", **kwargs):
+        super(MREMetric, self).__init__(name=name, **kwargs)
+        self.mre = self.add_weight(name="mre", initializer="zeros")
 
-    # Add small epsilon to denominator to prevent division by zero
-    epsilon = 1e-10
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        mre = tf.reduce_mean(tf.abs((y_true - y_pred) / (tf.reduce_mean(y_true) + 1e-7)))
+        self.mre.assign(mre)
 
-    # Clip predictions to prevent extreme values
-    y_prediction = tf.clip_by_value(y_prediction, -1e6, 1e6)
+    def result(self):
+        return self.mre
 
-    relative_error = tf.abs(y_ground_truth - y_prediction) / (tf.abs(y_ground_truth) + epsilon)
-    # Clip the relative error to prevent extreme values
-    relative_error = tf.clip_by_value(relative_error, 0.0, 1e6)
-
-    return tf.reduce_mean(relative_error)
+    def reset_states(self):
+        self.mre.assign(0.0)
 
 
-def f1_score(y_ground_truth, y_prediction):
-    """
-    Modified F1 score with better numerical stability
-    """
-    epsilon = 1e-10
+class F1ScoreMetric(tf.keras.metrics.Metric):
+    def __init__(self, name="f1_score", **kwargs):
+        super(F1ScoreMetric, self).__init__(name=name, **kwargs)
+        self.true_positives = self.add_weight(name="true_positives", initializer="zeros")
+        self.predicted_positives = self.add_weight(name="predicted_positives", initializer="zeros")
+        self.actual_positives = self.add_weight(name="actual_positives", initializer="zeros")
+        self.epsilon = 1e-10  # Small constant for numerical stability
 
-    # Ensure inputs are float32
-    y_ground_truth = tf.cast(y_ground_truth, tf.float32)
-    y_prediction = tf.cast(y_prediction, tf.float32)
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        # Cast to float32 and apply thresholding
+        y_true = tf.cast(y_true, tf.float32)
+        y_pred = tf.cast(y_pred, tf.float32)
+        threshold = tf.reduce_mean(y_true) * 0.1
+        y_true = tf.cast(y_true > threshold, tf.float32)
+        y_pred = tf.cast(y_pred > threshold, tf.float32)
 
-    # Use a threshold relative to the data
-    threshold = tf.reduce_mean(y_ground_truth) * 0.1
+        # Calculate true positives, predicted positives, and actual positives
+        true_positives = tf.reduce_sum(y_true * y_pred)
+        predicted_positives = tf.reduce_sum(y_pred)
+        actual_positives = tf.reduce_sum(y_true)
 
-    y_ground_truth = tf.cast(y_ground_truth > threshold, tf.float32)
-    y_prediction = tf.cast(y_prediction > threshold, tf.float32)
+        # Update metric state
+        self.true_positives.assign_add(true_positives)
+        self.predicted_positives.assign_add(predicted_positives)
+        self.actual_positives.assign_add(actual_positives)
 
-    true_positives = tf.reduce_sum(y_ground_truth * y_prediction)
-    predicted_positives = tf.reduce_sum(y_prediction)
-    actual_positives = tf.reduce_sum(y_ground_truth)
+    def result(self):
+        # Calculate precision and recall, then F1 score
+        precision = self.true_positives / (self.predicted_positives + self.epsilon)
+        recall = self.true_positives / (self.actual_positives + self.epsilon)
+        f1 = 2 * ((precision * recall) / (precision + recall + self.epsilon))
+        return tf.clip_by_value(f1, 0.0, 1.0)
 
-    precision = true_positives / (predicted_positives + epsilon)
-    recall = true_positives / (actual_positives + epsilon)
+    def reset_states(self):
+        # Reset metric state variables
+        self.true_positives.assign(0.0)
+        self.predicted_positives.assign(0.0)
+        self.actual_positives.assign(0.0)
 
-    f1 = 2 * ((precision * recall) / (precision + recall + epsilon))
-    return tf.clip_by_value(f1, 0.0, 1.0)
 
+class NDEMetric(tf.keras.metrics.Metric):
+    def __init__(self, name="nde_metric", **kwargs):
+        super(NDEMetric, self).__init__(name=name, **kwargs)
+        self.numerator = self.add_weight(name="numerator", initializer="zeros")
+        self.denominator = self.add_weight(name="denominator", initializer="zeros")
+        self.epsilon = 1e-10  # Small constant to avoid division by zero
 
-def nde_metric(y_true, y_pred):
-    """
-    Modified Normalized Disaggregation Error with better numerical stability
-    """
-    epsilon = 1e-10
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        # Cast to float32
+        y_true = tf.cast(y_true, tf.float32)
+        y_pred = tf.cast(y_pred, tf.float32)
 
-    y_true = tf.cast(y_true, tf.float32)
-    y_pred = tf.cast(y_pred, tf.float32)
+        # Clip predictions to avoid extreme values
+        y_pred = tf.clip_by_value(y_pred, -1e6, 1e6)
 
-    # Clip predictions to prevent extreme values
-    y_pred = tf.clip_by_value(y_pred, -1e6, 1e6)
+        # Calculate numerator and denominator for NDE
+        numerator = tf.reduce_sum(tf.square(y_true - y_pred))
+        denominator = tf.reduce_sum(tf.square(y_true))
 
-    numerator = tf.reduce_sum(tf.square(y_true - y_pred))
-    denominator = tf.reduce_sum(tf.square(y_true)) + epsilon
+        # Update metric state
+        self.numerator.assign_add(numerator)
+        self.denominator.assign_add(denominator)
 
-    return tf.sqrt(tf.clip_by_value(numerator / denominator, 0.0, 1e6))
+    def result(self):
+        # Calculate NDE with safety clipping
+        nde = tf.sqrt(tf.clip_by_value(self.numerator / (self.denominator + self.epsilon), 0.0, 1e6))
+        return nde
+
+    def reset_states(self):
+        # Reset metric state variables
+        self.numerator.assign(0.0)
+        self.denominator.assign(0.0)

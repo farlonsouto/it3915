@@ -1,6 +1,8 @@
 import tensorflow as tf
 from tensorflow.keras import layers, Model, regularizers
 
+from custom_loss import bert4nilm_loss
+
 
 class LearnedL2NormPooling(layers.Layer):
     def __init__(self, pool_size=2, epsilon=1e-6, **kwargs):
@@ -39,6 +41,7 @@ class LearnedL2NormPooling(layers.Layer):
 class BERT4NILM(Model):
     def __init__(self, wandb_config):
         super(BERT4NILM, self).__init__()
+        self.on_threshold = wandb_config.on_threshold
         self.args = wandb_config
 
         # Model configuration parameters
@@ -174,31 +177,37 @@ class BERT4NILM(Model):
         y_pred = self.output_layer(x)  # Shape: (batch_size, window_size, 1)
         return y_pred  # Return the prediction for each timestep in the sequence
 
+    def appliance_state(self, y_true, y_pred):
+        # Implement this method to generate the appliance state label and predictions (s, s_hat)
+        # `s_true` and `s_pred` represent the ground truth and predicted state labels.
+        # Example placeholder implementation:
+        s_true = tf.cast(y_true > self.on_threshold, dtype=tf.float32) * 2 - 1  # Convert to {-1, 1}
+        s_pred = tf.cast(y_pred > self.on_threshold, dtype=tf.float32) * 2 - 1  # Convert to {-1, 1}
+        return s_true, s_pred
+
     def train_step(self, data):
         # Unpack the data
-        x, y = data
+        x, y_true = data
 
-        # Forward pass with GradientTape
         with tf.GradientTape() as tape:
+            # Forward pass
             y_pred = self(x, training=True)
-            loss = self.compiled_loss(y, y_pred, regularization_losses=self.losses)
 
-        # Calculate gradients
+            # Get the appliance state labels and predictions
+            s_true, s_pred = self.appliance_state(y_true, y_pred)
+
+            # Calculate the custom loss
+            loss = bert4nilm_loss((y_true, y_pred), (s_true, s_pred))
+
+        # Compute gradients
         gradients = tape.gradient(loss, self.trainable_variables)
-
-        # Check for NaNs in gradients using check_numerics
-        for i, grad in enumerate(gradients):
-            if grad is not None:
-                try:
-                    tf.debugging.check_numerics(grad,
-                                                f"NaN or Inf detected in gradient of variable {self.trainable_variables[i].name}")
-                except tf.errors.InvalidArgumentError:
-                    tf.print(f"NaN or Inf detected in gradient of variable {self.trainable_variables[i].name}")
-                    raise
-
-        # Apply gradients
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        # Update and return metrics
-        self.compiled_metrics.update_state(y, y_pred)
-        return {m.name: m.result() for m in self.metrics}
+        # Update and calculate metrics
+        self.compiled_metrics.update_state(y_true, y_pred)
+
+        # Collect all metrics to return
+        metrics = {m.name: m.result() for m in self.metrics}
+        metrics["loss"] = loss
+
+        return metrics

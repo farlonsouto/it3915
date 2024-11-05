@@ -21,29 +21,28 @@ wandb.init(
     config={
         "appliance": "kettle",  # The selected appliance must be the same for training and testing !!
         # "appliance": "fridge", # for the AMPds2 dataset, since kettle is not available
-        "loss": "mae",
-        # "loss": "bert4nilm_loss",
-        "on_threshold": 2000,  # For UK Dale it makes sense, but for AMPds2 it doesn't mean anything
-        "window_size": 64,  # For AMPds2, size n means n min
-        "batch_size": 16,
+        # "loss": "mae",
+        "on_threshold": 2000,
+        "loss": "bert4nilm_loss",
+        "window_size": 256,  # For AMPds2, size n means n min
+        "batch_size": 1024,
         "head_size": 128,
         "num_heads": 2,
-        "n_layers": 2,
+        "n_layers": 1,
         "dropout": 0.1,
         "learning_rate": 1e-4,
-        "epochs": 2,
+        "epochs": 10,
         "optimizer": "adam",
         "tau": 1.0,
         "lambda_val": 0.1,
-        "masking_portion": 0.125,
+        "masking_portion": 0.25,
         "output_size": 1,
-        "conv_kernel_size": 4,
-        "deconv_kernel_size": 4,
-        "embedding_dim": 128,
+        "conv_kernel_size": 5,
+        "deconv_kernel_size": 3,
         "pooling_type": "max",  # Options: 'max', 'average'
         "conv_activation": "relu",
         "dense_activation": "relu",
-        "ff_dim": 128,  # Feed-forward network dimension
+        "ff_dim": 32,  # Feed-forward network dimension
         "layer_norm_epsilon": 1e-6,
         "kernel_initializer": "glorot_uniform",
         "bias_initializer": "zeros",

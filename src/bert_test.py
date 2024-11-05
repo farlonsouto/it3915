@@ -64,7 +64,7 @@ dataset = DataSet('../datasets/ukdale.h5')
 
 # time series handler for the UK Dale dataset
 timeSeries = TimeSeries(dataset, [2], [2], wandb_config.window_size, wandb_config.batch_size,
-                        appliance=wandb_config.appliance, on_threshold=wandb_config.on_threshold)
+                        appliance=wandb_config.appliance)
 
 # time series handler for the AMPds2dataset
 # timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,
