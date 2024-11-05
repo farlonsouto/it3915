@@ -41,6 +41,7 @@ class LearnedL2NormPooling(layers.Layer):
 class BERT4NILM(Model):
     def __init__(self, wandb_config):
         super(BERT4NILM, self).__init__()
+        self.max_power = wandb_config.max_power
         self.on_threshold = wandb_config.on_threshold
         self.args = wandb_config
 
@@ -178,11 +179,26 @@ class BERT4NILM(Model):
         return y_pred  # Return the prediction for each timestep in the sequence
 
     def appliance_state(self, y_true, y_pred):
-        # Implement this method to generate the appliance state label and predictions (s, s_hat)
-        # `s_true` and `s_pred` represent the ground truth and predicted state labels.
-        # Example placeholder implementation:
-        s_true = tf.cast(y_true > self.on_threshold, dtype=tf.float32) * 2 - 1  # Convert to {-1, 1}
-        s_pred = tf.cast(y_pred > self.on_threshold, dtype=tf.float32) * 2 - 1  # Convert to {-1, 1}
+        """
+        Determines appliance state based on power consumption thresholds.
+
+        Args:
+            y_true (tensor): Ground truth power consumption values.
+            y_pred (tensor): Predicted power consumption values.
+
+        Returns:
+            s_true (tensor): Ground truth appliance state labels {-1, 1}.
+            s_pred (tensor): Predicted appliance state labels {-1, 1}.
+        """
+        # Clamp ground truth and predicted values to avoid noise affecting state detection
+        max_power = self.max_power  # or set this based on appliance-specific max power if available
+        y_true = tf.clip_by_value(y_true, 0, max_power)
+        y_pred = tf.clip_by_value(y_pred, 0, max_power)
+
+        # Use the on-threshold to determine state; anything above on_threshold is considered "on"
+        s_true = tf.cast(y_true > self.on_threshold, dtype=tf.float32) * 2 - 1  # {-1, 1}
+        s_pred = tf.cast(y_pred > self.on_threshold, dtype=tf.float32) * 2 - 1  # {-1, 1}
+
         return s_true, s_pred
 
     def train_step(self, data):

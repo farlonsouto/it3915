@@ -23,19 +23,20 @@ wandb.init(
         # "appliance": "fridge", # for the AMPds2 dataset, since kettle is not available
         # "loss": "mae",
         "on_threshold": 2000,
-        "loss": "bert4nilm_loss",
-        "window_size": 256,  # For AMPds2, size n means n min
-        "batch_size": 1024,
-        "head_size": 128,
+        "max_power": 3100,
+        "loss": "bert4nilm",  # The BERT4NILM custom loss is called from inside the model
+        "window_size": 128,  # For AMPds2, size n means n min; for UK Dale, 10 time steps mean 1 minute
+        "batch_size": 512,
+        "head_size": 64,
         "num_heads": 2,
-        "n_layers": 1,
-        "dropout": 0.1,
+        "n_layers": 3,
+        "dropout": 0.2,
         "learning_rate": 1e-4,
         "epochs": 10,
         "optimizer": "adam",
         "tau": 1.0,
         "lambda_val": 0.1,
-        "masking_portion": 0.25,
+        "masking_portion": 0.2,
         "output_size": 1,
         "conv_kernel_size": 5,
         "deconv_kernel_size": 3,

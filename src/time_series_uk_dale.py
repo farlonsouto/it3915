@@ -112,6 +112,12 @@ class TimeSeriesDataGenerator(Sequence):
 
     def _process_data(self, mains_power, appliance_power):
 
+        # TODO: Clamping
+        # max_power_main = 5000  # Example max power for main meter (change as needed)
+        # max_power_appliance = 3000  # Example max power for appliance (change as needed)
+        # mains_power = mains_power.clip(upper=max_power_main)
+        # appliance_power = appliance_power.clip(upper=max_power_appliance)
+
         # Drop duplicate indices
         mains_power = mains_power[~mains_power.index.duplicated(keep='first')]
 
