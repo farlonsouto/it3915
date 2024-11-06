@@ -7,5 +7,5 @@ wandb/
 src/wandb
 src/__pycache__
 src/__init__.py
-model/
+models/
 __pycache__/
