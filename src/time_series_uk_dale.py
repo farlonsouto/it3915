@@ -129,7 +129,7 @@ class TimeSeriesDataGenerator(Sequence):
 
         # Fill missing values, first fw and then bw propagation fill
         if mains_power.isnull().any():
-            mains_power = mains_power.fillna(method='ffill').fillna(method='bfill')
+            mains_power = mains_power.ffill().bfill()
 
         # Normalize mains power
         mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
