@@ -5,7 +5,7 @@ from nilmtk import DataSet
 from bert4nilm import BERT4NILM
 from bert_wandb_init import wandb_config
 from custom_loss import nde_loss
-from custom_metrics import mre_metric, f1_score, nde_metric
+from custom_metrics import MREMetric, F1ScoreMetric, NDEMetric
 from gpu_memory_allocation import set_gpu_memory_growth
 from time_series_uk_dale import TimeSeries
 
@@ -51,9 +51,9 @@ bert_model.compile(
         'accuracy',
         tf.keras.metrics.MeanAbsoluteError(name='mae'),
         tf.keras.metrics.MeanSquaredError(name='mse'),
-        mre_metric,
-        f1_score,
-        nde_metric
+        MREMetric(),
+        F1ScoreMetric(),
+        NDEMetric()
     ]
 )
 

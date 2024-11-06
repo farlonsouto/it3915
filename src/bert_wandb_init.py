@@ -25,25 +25,25 @@ wandb.init(
         "on_threshold": 2000,
         "max_power": 3100,
         "loss": "bert4nilm",  # The BERT4NILM custom loss is called from inside the model
-        "window_size": 128,  # For AMPds2, size n means n min; for UK Dale, 10 time steps mean 1 minute
-        "batch_size": 512,
-        "head_size": 64,
+        "window_size": 384,  # For AMPds2, size n means n min; for UK Dale, 10 time steps mean 1 minute
+        "batch_size": 256,
+        "head_size": 128,
         "num_heads": 2,
-        "n_layers": 3,
-        "dropout": 0.2,
-        "learning_rate": 1e-4,
+        "n_layers": 2,
+        "dropout": 0.1,
+        "learning_rate": 1.5e-5,
         "epochs": 10,
         "optimizer": "adam",
         "tau": 1.0,
         "lambda_val": 0.1,
-        "masking_portion": 0.2,
+        "masking_portion": 0.15,
         "output_size": 1,
         "conv_kernel_size": 5,
-        "deconv_kernel_size": 3,
+        "deconv_kernel_size": 5,
         "pooling_type": "max",  # Options: 'max', 'average'
         "conv_activation": "relu",
         "dense_activation": "relu",
-        "ff_dim": 32,  # Feed-forward network dimension
+        "ff_dim": 128,  # Feed-forward network dimension
         "layer_norm_epsilon": 1e-6,
         "kernel_initializer": "glorot_uniform",
         "bias_initializer": "zeros",
