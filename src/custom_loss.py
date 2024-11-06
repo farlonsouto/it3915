@@ -1,7 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from sdtw import SoftDTW
-from sdtw.distance import SquaredEuclidean
 from tensorflow.python.keras.losses import KLDivergence
 
 
@@ -72,36 +70,3 @@ def bert4nilm_loss(y: tuple, s: tuple):
 
     return total_loss
 
-
-class SoftDtwWrapper(tf.keras.losses.Loss):
-    """
-    TODO: Can't promise plug-and-play for any seq2seq and seq2p approaches, regardless of the underlying architecture.
-    Originally, the Dynamic Time Warping equation is not differentiable everywhere. This limitation icompromises the
-    gradient descend approach. So the problem is tackled as proposed by Marco Cuturi and Mathieu Blondel in 'Soft-DTW:
-    a differentiable loss function for time-series'. In Proceedings of the International Conference on Machine
-    Learning, 894–903. JMLR. org, 2017."""
-
-    def __init__(self, gamma=1.0, **kwargs):
-        super(SoftDtwWrapper, self).__init__(**kwargs)
-        self.gamma = gamma
-
-    def call(self, y_true, y_pred):
-        y_true = tf.cast(y_true, dtype=tf.float32)
-        y_pred = tf.cast(y_pred, dtype=tf.float32)
-        loss = tf.py_function(self.compute_dtw_loss, [y_true, y_pred], tf.float32)
-        return loss
-
-    def compute_dtw_loss(self, y_true, y_pred):
-        y_true_np = y_true.numpy()
-        y_pred_np = y_pred.numpy()
-
-        batch_size = y_true_np.shape[0]
-        loss = 0
-
-        # TODO: To be reviewed: Do we loop through the batch size? Isn't it within each window only?
-        for i in range(batch_size):
-            D = SquaredEuclidean(y_true_np[i:i + 1], y_pred_np[i:i + 1])
-            sdtw = SoftDTW(D, gamma=self.gamma)
-            loss += sdtw.compute()
-
-        return np.float32(loss / batch_size)
