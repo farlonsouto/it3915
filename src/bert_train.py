@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import tensorflow as tf
 import wandb
@@ -12,51 +14,62 @@ from gpu_memory_allocation import set_gpu_memory_growth
 # from time_series_ampds2 import TimeSeries
 from time_series_uk_dale import TimeSeries
 
+
+def create_model():
+    # Compile the model using the WandB configurations and the custom loss
+    optimizer = tf.keras.optimizers.Adam(
+        learning_rate=wandb_config.learning_rate,
+        clipnorm=1.0,  # gradient clipping
+        clipvalue=0.5
+    )
+
+    # Mapping the loss function from WandB configuration to TensorFlow's predefined loss functions
+    loss_fn_mapping = {
+        "mse": tf.keras.losses.MeanSquaredError(),
+        "mae": tf.keras.losses.MeanAbsoluteError()
+    }
+
+    # Get the loss function from the WandB config
+    loss_fn = loss_fn_mapping.get(wandb_config.loss, tf.keras.losses.MeanSquaredError())  # Default to MSE
+
+    # Instantiate the BERT4NILM model
+    model = BERT4NILM(wandb_config)
+
+    # Build the model by providing an input shape
+    # NOTICE: The 3D input_shape is (Batch size, window size, features) out of the time series. Where:
+    # `None` stands for a flexible, variable batch size.
+    # 'window_size` is the number of time steps
+    # `1` corresponds the number of features (for now, only one: the power consumption)
+    model.build((None, wandb_config.window_size, 1))
+
+    # Use bert4nilm_loss from bert_loss.py, and pass any required arguments from wandb_config
+    # Compile the model
+    model.compile(
+        optimizer=optimizer,
+        #    loss=loss_fn, ---- loss function defined inside the model
+        metrics=[
+            'accuracy',
+            tf.keras.metrics.MeanAbsoluteError(name='mae'),
+            tf.keras.metrics.MeanSquaredError(name='mse'),
+            MREMetric(),
+            F1ScoreMetric(),
+            NDEMetric()
+        ]
+    )
+
+    return model
+
+
+is_HPC = len(sys.argv) > 0 and sys.argv[0].lower() == 'hpc'
+
 set_gpu_memory_growth()
 
-# Instantiate the BERT4NILM model
-bert_model = BERT4NILM(wandb_config)
-
-# Build the model by providing an input shape
-# NOTICE: The 3D input_shape is (Batch size, window size, features) out of the time series. Where:
-# `None` stands for a flexible, variable batch size.
-# 'window_size` is the number of time steps
-# `1` corresponds the number of features (for now, only one: the power consumption)
-bert_model.build((None, wandb_config.window_size, 1))
-
-# Compile the model using the WandB configurations and the custom loss
-optimizer = tf.keras.optimizers.Adam(
-    learning_rate=wandb_config.learning_rate,
-    clipnorm=1.0,  # gradient clipping
-    clipvalue=0.5
-)
-
-# Mapping the loss function from WandB configuration to TensorFlow's predefined loss functions
-loss_fn_mapping = {
-    "mse": tf.keras.losses.MeanSquaredError(),
-    "mae": tf.keras.losses.MeanAbsoluteError()
-}
-
-# Get the loss function from the WandB config
-loss_fn = loss_fn_mapping.get(wandb_config.loss, tf.keras.losses.MeanSquaredError())  # Default to MSE
-
-# Use bert4nilm_loss from bert_loss.py, and pass any required arguments from wandb_config
-# Compile the model
-bert_model.compile(
-    optimizer=optimizer,
-    #    loss=loss_fn, ---- loss function defined inside the model
-    metrics=[
-        'accuracy',
-        tf.keras.metrics.MeanAbsoluteError(name='mae'),
-        tf.keras.metrics.MeanSquaredError(name='mse'),
-        MREMetric(),
-        F1ScoreMetric(),
-        NDEMetric()
-    ]
-)
-
-# Print the model summary
-bert_model.summary()
+if is_HPC:
+    strategy = tf.distribute.MirroredStrategy()
+    with strategy.scope():
+        bert_model = create_model()
+else:
+    bert_model = create_model()
 
 # path_to_dataset = '../datasets/AMPds2.h5'  # '../datasets/ukdale.h5'
 path_to_dataset = '../datasets/ukdale.h5'
