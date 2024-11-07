@@ -47,7 +47,7 @@ class BERT4NILM(Model):
 
         # Model configuration parameters
         self.original_len = wandb_config.window_size
-        self.latent_len = int(self.original_len / 2)
+        self.latent_len = wandb_config.window_size
         self.dropout_rate = wandb_config.dropout
         self.hidden = wandb_config.head_size
         self.heads = wandb_config.num_heads
@@ -159,9 +159,14 @@ class BERT4NILM(Model):
         # Initial convolution and pooling
         x_token = self.pool(self.conv(tf.expand_dims(inputs, axis=-1)))
 
-        # Add positional encoding and apply dropout
-        positions = tf.range(start=0, limit=tf.shape(x_token)[1], delta=1)
-        embedding = x_token + self.position(positions)
+        # Calculate dynamic latent length after pooling
+        sequence_length = tf.shape(x_token)[1]  # Get the actual sequence length after pooling
+        self.latent_len = sequence_length  # Dynamically assign to latent_len
+
+        # Positional encoding and dropout
+        positions = tf.range(start=0, limit=self.latent_len, delta=1)
+        positional_embedding = self.position(positions)
+        embedding = x_token + positional_embedding
 
         if training:
             mask = tf.random.uniform(shape=tf.shape(embedding)[:2]) < self.masking_portion
@@ -176,7 +181,7 @@ class BERT4NILM(Model):
         # Deconvolution and final dense layer for each timestep in sequence
         x = self.deconv(x)
         y_pred = self.output_layer(x)  # Shape: (batch_size, window_size, 1)
-        return y_pred  # Return the prediction for each timestep in the sequence
+        return y_pred
 
     def appliance_state(self, y_true, y_pred):
         """
