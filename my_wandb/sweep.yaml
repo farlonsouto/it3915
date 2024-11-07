@@ -1,0 +1,105 @@
+program: bert_train.py
+method: bayes
+metric:
+  name: "loss"
+  goal: minimize
+parameters:
+  tau:
+    distribution: categorical
+    values:
+      - 1
+  loss:
+    distribution: categorical
+    values:
+      - mae
+      - mse
+  epochs:
+    distribution: int_uniform
+    min: 5
+    max: 20
+  ff_dim:
+    distribution: int_uniform
+    min: 128
+    max: 1024
+  dropout:
+    distribution: uniform
+    min: 0.05
+    max: 0.2
+  n_layers:
+    distribution: int_uniform
+    min: 1
+    max: 4
+  head_size:
+    distribution: int_uniform
+    min: 64
+    max: 512
+  num_heads:
+    distribution: int_uniform
+    min: 1
+    max: 8
+  optimizer:
+    distribution: categorical
+    values:
+      - adam
+  batch_size:
+    distribution: categorical
+    values:
+      - 4096
+  lambda_val:
+    distribution: uniform
+    min: 0.05
+    max: 0.2
+  output_size:
+    distribution: categorical
+    values:
+      - 1
+  window_size:
+    distribution: int_uniform
+    min: 128
+    max: 512
+  on_threshold:
+    distribution: categorical
+    values:
+      - 2000
+  pooling_type:
+    distribution: categorical
+    values:
+      - max
+  learning_rate:
+    distribution: uniform
+    min: 0.000005
+    max: 0.0002
+  conv_activation:
+    distribution: categorical
+    values:
+      - relu
+      - gelu
+  masking_portion:
+    distribution: uniform
+    min: 0.125
+    max: 0.25
+  bias_initializer:
+    distribution: categorical
+    values:
+      - zeros
+  conv_kernel_size:
+    distribution: int_uniform
+    min: 2
+    max: 8
+  dense_activation:
+    distribution: categorical
+    values:
+      - relu
+      - gelu
+  deconv_kernel_size:
+    distribution: int_uniform
+    min: 2
+    max: 8
+  kernel_initializer:
+    distribution: categorical
+    values:
+      - glorot_uniform
+  layer_norm_epsilon:
+    distribution: uniform
+    min: 5e-7
+    max: 0.000002
