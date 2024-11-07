@@ -45,8 +45,12 @@ def bert4nilm_loss(y: tuple, s: tuple):
     loss -- The computed loss value.
     """
 
+    # Assigning values and ensuring same shapes
     y_ground_truth, y_predicted = y
+    y_predicted = tf.reshape(y_predicted, tf.shape(y_ground_truth))
+
     s_ground_truth, s_predicted = s
+    s_predicted = tf.reshape(s_predicted, tf.shape(s_ground_truth))
 
     tau = 1.0
     lambda_val = 0.1
