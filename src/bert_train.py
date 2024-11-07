@@ -60,7 +60,7 @@ def create_model():
     return model
 
 
-is_HPC = len(sys.argv) > 0 and sys.argv[0].lower() == 'hpc'
+is_HPC = False #len(sys.argv) > 0 and sys.argv[0].lower() == 'hpc'
 
 set_gpu_memory_growth()
 

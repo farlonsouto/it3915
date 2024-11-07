@@ -61,7 +61,13 @@ def bert4nilm_loss(y: tuple, s: tuple):
     # Kullback-Leibler Divergence between softmax distributions
     softmax_true = tf.nn.softmax(y_ground_truth / tau)
     softmax_pred = tf.nn.softmax(y_predicted / tau)
-    kl_loss = KLDivergence()(softmax_true, softmax_pred)
+    
+    # Original code for 1 GPU or 1 CPU
+    # kl_loss = KLDivergence()(softmax_true, softmax_pred)
+
+    #Code to handle reduction for multiple GPUs:
+    # Modify the KL divergence calculation
+    kl_loss = tf.reduce_sum(tf.keras.losses.KLDivergence(reduction=tf.keras.losses.Reduction.NONE)(softmax_true, softmax_pred))
 
     # Log-sigmoid cross-entropy term
     log_sigmoid_loss = tf.reduce_mean(tf.math.log(1 + tf.exp(-s_predicted * s_ground_truth)))
