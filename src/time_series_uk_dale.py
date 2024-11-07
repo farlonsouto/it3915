@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from nilmtk import DataSet
 from tensorflow.keras.utils import Sequence
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class TimeSeries:
@@ -122,7 +124,7 @@ class TimeSeriesDataGenerator(Sequence):
         mains_power = mains_power[~mains_power.index.duplicated(keep='first')]
 
         # Down sample the aggregated reading to 6s and replace any NaN with the nearest value up to 1 time step away
-        mains_power = mains_power.resample('6S').nearest(limit=1)
+        mains_power = mains_power.resample('6s').nearest(limit=1)
 
         # Align the series by their indices
         mains_power, appliance_power = mains_power.align(appliance_power, join='inner', axis=0)
