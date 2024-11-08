@@ -25,7 +25,7 @@ wandb.init(
         "on_threshold": 2000,
         "max_power": 3100,
         "loss": "bert4nilm",  # The BERT4NILM custom loss is called from inside the model
-        "window_size": 384,  # For AMPds2, size n means n min; for UK Dale, 10 time steps mean 1 minute
+        "window_size": 256,  # For AMPds2, size n means n min; for UK Dale, 10 time steps mean 1 minute
         "batch_size": 256,
         "head_size": 128,
         "num_heads": 2,
