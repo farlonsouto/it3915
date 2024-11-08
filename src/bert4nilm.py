@@ -4,6 +4,8 @@ from tensorflow.keras import layers, Model, regularizers
 
 from custom_loss import bert4nilm_loss
 
+tf.config.run_functions_eagerly(True)  # Forces eager execution in tf.function
+
 
 class LearnedL2NormPooling(layers.Layer):
     """
@@ -277,11 +279,8 @@ class BERT4NILM(Model):
         metrics = {m.name: m.result() for m in self.metrics}
         metrics["loss"] = loss
 
-        # Convert loss to a Python scalar for logging
-        loss_value = loss.numpy() if hasattr(loss, 'numpy') else tf.reduce_sum(loss).numpy()
-
         # Log to wandb at the specified interval
         if int(self.optimizer.iterations) % self.batch_size == 0:
-            wandb.log({"loss": loss_value})
+            wandb.log({"loss": loss.numpy()})
 
         return metrics

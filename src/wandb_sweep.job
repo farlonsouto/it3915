@@ -30,7 +30,7 @@ module load cuDNN/8.5.0.96-CUDA-11.7.0
 conda activate nnenv
 
 # Run the WandB agent command for the sweep
-wandb agent farlonsouto-ntnu/nilm_bert_transformer/95czb3ok
+wandb agent farlonsouto-ntnu/nilm_bert_transformer/bmgze4ej
 
 # Display system information for debugging
 uname -a
