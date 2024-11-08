@@ -105,8 +105,8 @@ my_callbacks = [
     WandbMetricsLogger(log_freq='epoch'),
     # , GradientDebugCallback()
     # , BatchStatsCallback()
-    EarlyStopping(patience=10, monitor='val_loss', restore_best_weights=True),
-    ModelCheckpoint('../models/bert_model.keras', save_best_only=True, monitor='val_loss')
+    EarlyStopping(patience=10, monitor='loss', restore_best_weights=True),
+    ModelCheckpoint('../models/bert_model.keras', save_best_only=True, monitor='loss')
     # ,TensorBoard(log_dir='../logs')
 ]
 
