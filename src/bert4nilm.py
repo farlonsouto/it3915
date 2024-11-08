@@ -277,11 +277,11 @@ class BERT4NILM(Model):
         metrics = {m.name: m.result() for m in self.metrics}
         metrics["loss"] = loss
 
-        # Log to wandb every `batch_size` number of iterations
-        tf.cond(
-            tf.equal(self.optimizer.iterations % self.batch_size, 0),
-            lambda: wandb.log({"loss": loss}),
-            lambda: None  # No operation if the condition is false
-        )
+        # Convert loss to a Python scalar for logging
+        loss_value = loss.numpy() if hasattr(loss, 'numpy') else tf.reduce_sum(loss).numpy()
+
+        # Log to wandb at the specified interval
+        if int(self.optimizer.iterations) % self.batch_size == 0:
+            wandb.log({"loss": loss_value})
 
         return metrics
