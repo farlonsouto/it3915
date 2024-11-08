@@ -224,6 +224,10 @@ class BERT4NILM(Model):
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
+        # monitor possible shape differences and force reshaping
+        if tf.shape(y_true) != tf.shape(y_pred):
+            y_pred = tf.reshape(y_pred, tf.shape(y_true))
+
         # Update and calculate metrics
         self.compiled_metrics.update_state(y_true, y_pred)
 
