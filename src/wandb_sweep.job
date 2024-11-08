@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1                      # Request 1 GPU
-#SBATCH --mem=32G                         # Request 32GB memory
+#SBATCH --mem=64G                         # Request 64GB memory
 #SBATCH --job-name="WandB-Sweep"
 #SBATCH --output=sweep.log                # Output log file
 #SBATCH --mail-user=farlond@stud.ntnu.no  # Email for notifications
