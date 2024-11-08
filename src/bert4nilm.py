@@ -225,7 +225,7 @@ class BERT4NILM(Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
         # monitor possible shape differences and force reshaping
-        if tf.shape(y_true) != tf.shape(y_pred):
+        if not tf.reduce_all(tf.equal(tf.shape(y_true), tf.shape(y_pred))):
             y_pred = tf.reshape(y_pred, tf.shape(y_true))
 
         # Update and calculate metrics
