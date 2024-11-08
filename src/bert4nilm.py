@@ -206,6 +206,8 @@ class BERT4NILM(Model):
 
         return s_true, s_pred
 
+    import tensorflow as tf
+
     def train_step(self, data):
         # Unpack the data
         x, y_true = data
@@ -214,18 +216,36 @@ class BERT4NILM(Model):
             # Forward pass
             y_pred = self(x, training=True)
 
-            # Get the appliance state labels and predictions
-            s_true, s_pred = self.appliance_state(y_true, y_pred)
+            # Ensure shapes match before proceeding
+            try:
+                # Check that y_true and y_pred have the same number of elements
+                y_true_elements = tf.size(y_true)
+                y_pred_elements = tf.size(y_pred)
 
-            # Calculate the custom loss
-            loss = bert4nilm_loss((y_true, y_pred), (s_true, s_pred))
+                tf.debugging.assert_equal(
+                    y_true_elements, y_pred_elements,
+                    message="Shape mismatch: y_true and y_pred must have the same number of elements"
+                )
+
+                # Reshape y_pred if needed to match y_true's shape
+                y_pred = tf.reshape(y_pred, tf.shape(y_true))
+
+                # Get the appliance state labels and predictions
+                s_true, s_pred = self.appliance_state(y_true, y_pred)
+
+                # Calculate the custom loss
+                loss = bert4nilm_loss((y_true, y_pred), (s_true, s_pred))
+
+            except tf.errors.InvalidArgumentError as e:
+                tf.print("Error in train_step:", e)
+                # Return an empty metrics dictionary if there is an error
+                return {}
 
         # Compute gradients
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        # Ensure shapes do match:
-        # Assuming (batch_size, sequence_length, 1) shape for both y_pred and y_true
+        # Ensure shapes match
         y_true = tf.ensure_shape(y_true, [None, None, 1])
         y_pred = tf.ensure_shape(y_pred, [None, None, 1])
 
@@ -237,3 +257,4 @@ class BERT4NILM(Model):
         metrics["loss"] = loss
 
         return metrics
+
