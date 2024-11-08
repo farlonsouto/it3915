@@ -1,4 +1,5 @@
 import tensorflow as tf
+import wandb
 from tensorflow.keras import layers, Model, regularizers
 
 from custom_loss import bert4nilm_loss
@@ -41,6 +42,7 @@ class LearnedL2NormPooling(layers.Layer):
 class BERT4NILM(Model):
     def __init__(self, wandb_config):
         super(BERT4NILM, self).__init__()
+        self.batch_size = wandb_config.batch_size
         self.max_power = wandb_config.max_power
         self.on_threshold = wandb_config.on_threshold
         self.args = wandb_config
@@ -255,6 +257,9 @@ class BERT4NILM(Model):
         # Collect all metrics to return
         metrics = {m.name: m.result() for m in self.metrics}
         metrics["loss"] = loss
+
+        if tf.equal(self.optimizer.iterations % self.batch_size, 0):
+            wandb.log({"loss": loss})
 
         return metrics
 
