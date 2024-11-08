@@ -206,6 +206,13 @@ class BERT4NILM(Model):
 
         return s_true, s_pred
 
+    def mismatch_action(self):
+        return tf.constant(False)  # Return a value to avoid `None` in `tf.cond`
+
+    # Define what to do if shapes match
+    def match_action(self):
+        return tf.constant(True)
+
     def train_step(self, data):
         # Unpack the data
         x, y_true = data
@@ -225,7 +232,13 @@ class BERT4NILM(Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
         # monitor possible shape differences and force reshaping
-        if not tf.reduce_all(tf.equal(tf.shape(y_true), tf.shape(y_pred))):
+        shape_check = tf.cond(
+            tf.reduce_all(tf.equal(tf.shape(y_true), tf.shape(y_pred))),
+            self.match_action,
+            self.mismatch_action
+        )
+
+        if shape_check:
             y_pred = tf.reshape(y_pred, tf.shape(y_true))
 
         # Update and calculate metrics
