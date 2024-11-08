@@ -224,15 +224,10 @@ class BERT4NILM(Model):
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        # monitor possible shape differences
-        shape_check = tf.reduce_all(tf.equal(tf.shape(y_true), tf.shape(y_pred)))
-
-        # conditional reshaping
-        tf.cond(
-            shape_check,
-            lambda: y_true,  # No adjustment needed if shapes match
-            lambda: tf.reshape(y_true, tf.shape(y_pred))  # reshape is needed
-        )
+        # Ensure shapes do match:
+        # Assuming (batch_size, sequence_length, 1) shape for both y_pred and y_true
+        y_true = tf.ensure_shape(y_true, [None, None, 1])
+        y_pred = tf.ensure_shape(y_pred, [None, None, 1])
 
         # Update and calculate metrics
         self.compiled_metrics.update_state(y_true, y_pred)
