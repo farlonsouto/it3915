@@ -5,9 +5,9 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1                      # Request 1 GPU
-#SBATCH --mem=32G                       # Request 32GB memory
+#SBATCH --mem=32G                         # Request 32GB memory
 #SBATCH --job-name="WandB-Sweep"
-#SBATCH --output=wandb_sweep_job.log      # Output log file
+#SBATCH --output=sweep.log                # Output log file
 #SBATCH --mail-user=farlond@stud.ntnu.no  # Email for notifications
 #SBATCH --mail-type=ALL
 
@@ -27,7 +27,7 @@ echo "          Total used cores: $SLURM_NTASKS"
 # Load Anaconda and activate the Conda environment
 module load Anaconda3/2023.09-0
 module load cuDNN/8.5.0.96-CUDA-11.7.0
-source activate nnenv
+conda activate nnenv
 
 # Run the WandB agent command for the sweep
 wandb agent farlonsouto-ntnu/nilm_bert_transformer/95czb3ok
