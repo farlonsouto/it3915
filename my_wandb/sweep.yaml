@@ -43,8 +43,7 @@ parameters:
       - adam
   batch_size:
     distribution: categorical
-    values:
-      - 4096
+    values: [256, 512, 1024]
   lambda_val:
     distribution: uniform
     min: 0.05
