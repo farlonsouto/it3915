@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 import tensorflow as tf
 import wandb
@@ -60,7 +58,7 @@ def create_model():
     return model
 
 
-is_HPC = False #len(sys.argv) > 0 and sys.argv[0].lower() == 'hpc'
+is_HPC = False  # len(sys.argv) > 0 and sys.argv[0].lower() == 'hpc'
 
 set_gpu_memory_growth()
 
@@ -103,11 +101,8 @@ print("... The training data is available. Starting training ...")
 
 my_callbacks = [
     WandbMetricsLogger(log_freq='epoch'),
-    # , GradientDebugCallback()
-    # , BatchStatsCallback()
-    EarlyStopping(patience=10, monitor='loss', restore_best_weights=True),
-    ModelCheckpoint('../models/bert_model.keras', save_best_only=True, monitor='loss')
-    # ,TensorBoard(log_dir='../logs')
+    EarlyStopping(patience=10, monitor='val_loss', restore_best_weights=True),
+    ModelCheckpoint('../models/bert_model', save_best_only=True, monitor='loss', save_format="tf")
 ]
 
 # Train the model and track the training process using WandB
