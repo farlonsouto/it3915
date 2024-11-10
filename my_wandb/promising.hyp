@@ -1,0 +1,47 @@
+------------------------------------------------------ compact with 3 layers and 3 heads
+	batch_size: 128
+	bias_initializer: zeros
+	conv_activation: relu
+	conv_kernel_size: 5
+	deconv_kernel_size: 5
+	dense_activation: gelu
+	dropout: 0.3
+	epochs: 17
+	ff_dim: 64
+	head_size: 128
+	kernel_initializer: glorot_uniform
+	lambda_val: 0.2
+	layer_norm_epsilon: 0.001
+	learning_rate: 1.4489133069030753e-05
+	masking_portion: 0.2
+	n_layers: 3
+	num_heads: 3
+	on_threshold: 2000
+	optimizer: adam
+	output_size: 1
+	tau: 1
+	window_size: 64
+
+------------------------------------------------------ compact with 4 layers and 4 heads
+	batch_size: 128
+	bias_initializer: zeros
+	conv_activation: gelu
+	conv_kernel_size: 3
+	deconv_kernel_size: 3
+	dense_activation: gelu
+	dropout: 0.1
+	epochs: 5
+	ff_dim: 128
+	head_size: 32
+	kernel_initializer: glorot_uniform
+	lambda_val: 0.15
+	layer_norm_epsilon: 0.003
+	learning_rate: 6.374251559908239e-05
+	masking_portion: 0.1
+	n_layers: 4
+	num_heads: 2
+	on_threshold: 2000
+	optimizer: adam
+	output_size: 1
+	tau: 1
+	window_size: 256
