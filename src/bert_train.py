@@ -11,7 +11,6 @@ from bert4nilm import BERT4NILM
 from bert_wandb_init import wandb_config
 from custom_metrics import MREMetric, F1ScoreMetric, NDEMetric
 from gpu_memory_allocation import set_gpu_memory_growth
-# from time_series_ampds2 import TimeSeries
 from time_series_uk_dale import TimeSeries
 
 
@@ -71,7 +70,6 @@ if is_HPC:
 else:
     bert_model = create_model()
 
-# path_to_dataset = '../datasets/AMPds2.h5'  # '../datasets/ukdale.h5'
 path_to_dataset = '../datasets/ukdale.h5'
 print("Fetching data from the dataset located at ", path_to_dataset)
 dataset = DataSet(path_to_dataset)
@@ -80,10 +78,6 @@ dataset = DataSet(path_to_dataset)
 timeSeries = TimeSeries(dataset, [1, 3, 4, 5], [2],
                         wandb_config.window_size, wandb_config.batch_size,
                         appliance=wandb_config.appliance)
-
-# time series handler for the AMPds2dataset
-# timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,
-#                        appliance=wandb_config.appliance)
 
 train_gen = timeSeries.getTrainingDataGenerator()
 X_batch, y_batch = train_gen[0]

@@ -54,8 +54,8 @@ class BERT4NILM(Model):
         self.original_len = wandb_config.window_size
         self.latent_len = wandb_config.window_size
         self.dropout_rate = wandb_config.dropout
-        self.hidden = wandb_config.head_size
-        self.heads = wandb_config.num_heads
+        self.hidden_size = wandb_config.hidden_size
+        self.num_heads = wandb_config.num_heads
         self.n_transformer_blocks = wandb_config.n_layers
         self.output_size = wandb_config.output_size
         self.masking_portion = wandb_config.masking_portion
@@ -70,7 +70,7 @@ class BERT4NILM(Model):
 
         # Convolutional layers and learned pooling
         self.conv = layers.Conv1D(
-            filters=self.hidden,
+            filters=self.hidden_size,
             kernel_size=self.conv_kernel_size,
             padding='same',
             activation='relu',
@@ -84,7 +84,7 @@ class BERT4NILM(Model):
         # Positional embeddings and dropout layer
         self.position = layers.Embedding(
             input_dim=self.latent_len,
-            output_dim=self.hidden,
+            output_dim=self.hidden_size,
             embeddings_initializer=self.kernel_initializer
         )
         self.dropout = layers.Dropout(self.dropout_rate)
@@ -96,7 +96,7 @@ class BERT4NILM(Model):
 
         # Deconvolution and final dense layer
         self.deconv = layers.Conv1DTranspose(
-            filters=self.hidden,
+            filters=self.hidden_size,
             kernel_size=self.deconv_kernel_size,
             strides=2,
             padding='same',
@@ -127,12 +127,12 @@ class BERT4NILM(Model):
             return None
 
     def build_transformer_block(self):
-        inputs = layers.Input(shape=(None, self.hidden))
+        inputs = layers.Input(shape=(None, self.hidden_size))
 
         # Multi-head attention layer
         attn_output = layers.MultiHeadAttention(
-            num_heads=self.heads,
-            key_dim=self.hidden // self.heads
+            num_heads=self.num_heads,
+            key_dim=self.hidden_size // self.num_heads
         )(inputs, inputs)
         attn_output = layers.Dropout(self.dropout_rate)(attn_output)
         attn_output = layers.Add()([inputs, attn_output])
@@ -148,7 +148,7 @@ class BERT4NILM(Model):
             bias_regularizer=self.bias_regularizer
         )(attn_output)
         ff_output = layers.Dense(
-            self.hidden,
+            self.hidden_size,
             kernel_initializer=self.kernel_initializer,
             bias_initializer=self.bias_initializer,
             kernel_regularizer=self.kernel_regularizer,
