@@ -9,8 +9,7 @@ from bert4nilm import BERT4NILM
 from bert_wandb_init import wandb_config
 from custom_metrics import MREMetric, F1ScoreMetric, NDEMetric
 from gpu_memory_allocation import set_gpu_memory_growth
-# from time_series_ampds2 import TimeSeries
-from time_series_uk_dale import TimeSeries
+from time_series_ampds2 import TimeSeries
 
 
 def create_model():
@@ -69,15 +68,11 @@ if is_HPC:
 else:
     bert_model = create_model()
 
-# path_to_dataset = '../datasets/AMPds2.h5'  # '../datasets/ukdale.h5'
-path_to_dataset = '../datasets/ukdale.h5'
+path_to_dataset = '../datasets/AMPds2.h5'
 print("Fetching data from the dataset located at ", path_to_dataset)
 dataset = DataSet(path_to_dataset)
 
-# time series handler for the UK Dale dataset
-timeSeries = TimeSeries(dataset, [1, 3, 4, 5], [2],
-                        wandb_config.window_size, wandb_config.batch_size,
-                        appliance=wandb_config.appliance)
+timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size, appliance=wandb_config.appliance)
 
 # time series handler for the AMPds2dataset
 # timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,
@@ -102,7 +97,7 @@ print("... The training data is available. Starting training ...")
 my_callbacks = [
     WandbMetricsLogger(log_freq='epoch'),
     EarlyStopping(patience=10, monitor='val_loss', restore_best_weights=True),
-    ModelCheckpoint('../models/bert_model', save_best_only=True, monitor='loss', save_format="tf")
+    ModelCheckpoint('../models/bert_model_ampds2', save_best_only=True, monitor='loss', save_format="tf")
 ]
 
 # Train the model and track the training process using WandB

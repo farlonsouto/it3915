@@ -67,7 +67,7 @@ class BERT4NILM(Model):
         self.original_len = wandb_config.window_size
         self.latent_len = wandb_config.window_size
         self.dropout_rate = wandb_config.dropout
-        self.hidden = wandb_config.head_size
+        self.hidden = wandb_config.hidden_size
         self.heads = wandb_config.num_heads
         self.n_transformer_blocks = wandb_config.n_layers
         self.output_size = wandb_config.output_size
