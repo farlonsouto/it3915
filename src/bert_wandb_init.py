@@ -20,30 +20,28 @@ wandb.init(
     project="nilm_bert_transformer",
     config={
         "appliance": "kettle",  # The selected appliance must be the same for training and testing !!
-        # "appliance": "fridge", # for the AMPds2 dataset, since kettle is not available
         # "loss": "mae",
         "on_threshold": 2000,
         "max_power": 3100,
         "loss": "bert4nilm",  # The BERT4NILM custom loss is called from inside the model
-        "window_size": 256,  # For AMPds2, size n means n min; for UK Dale, 10 time steps mean 1 minute
-        "batch_size": 256,
-        "head_size": 128,
-        "num_heads": 2,
-        "n_layers": 2,
-        "dropout": 0.1,
-        "learning_rate": 1.5e-5,
-        "epochs": 10,
+        "window_size": 32e1,  # for UK Dale, 10 time steps mean 1 minute
+        "batch_size": 128,
+        "hidden_size": 64,
+        "num_heads": 4,
+        "n_layers": 4,
+        "dropout": 0.2,
+        "learning_rate": 5e-4,
+        "epochs": 20,
         "optimizer": "adam",
         "tau": 1.0,
         "lambda_val": 0.1,
-        "masking_portion": 0.15,
+        "masking_portion": 0.125,
         "output_size": 1,
         "conv_kernel_size": 5,
-        "deconv_kernel_size": 5,
-        "pooling_type": "max",  # Options: 'max', 'average'
+        "deconv_kernel_size": 3,
         "conv_activation": "relu",
         "dense_activation": "relu",
-        "ff_dim": 128,  # Feed-forward network dimension
+        "ff_dim": 256,  # Feed-forward network dimension
         "layer_norm_epsilon": 1e-6,
         "kernel_initializer": "glorot_uniform",
         "bias_initializer": "zeros",
