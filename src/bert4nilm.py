@@ -276,11 +276,11 @@ class BERT4NILM(Model):
         self.compiled_metrics.update_state(y_true, y_pred)
 
         # Collect all metrics to return
-        metrics = {m.name: m.result() for m in self.metrics}
-        metrics["loss"] = loss
+        metrics = {m.name: m.result().numpy() for m in self.metrics}  # Add all metrics as numpy scalars
+        metrics["loss"] = loss.numpy()  # Convert loss to numpy for logging
 
         # Log to wandb at the specified interval
         if int(self.optimizer.iterations) % self.batch_size == 0:
-            wandb.log({"loss": loss.numpy()})
+            wandb.log(metrics)  # Log all metrics to WandB
 
         return metrics
