@@ -7,9 +7,9 @@ from wandb.integration.keras import WandbMetricsLogger
 
 from bert4nilm import BERT4NILM
 from bert_wandb_init import wandb_config
+from custom_loss import Bert4NilmLoss
 from custom_metrics import MREMetric, F1ScoreMetric, NDEMetric
 from gpu_memory_allocation import set_gpu_memory_growth
-# from time_series_ampds2 import TimeSeries
 from time_series_uk_dale import TimeSeries
 
 
@@ -44,7 +44,7 @@ def create_model():
     # Compile the model
     model.compile(
         optimizer=optimizer,
-        #    loss=loss_fn, ---- loss function defined inside the model
+        loss=Bert4NilmLoss(wandb_config),
         metrics=[
             'accuracy',
             tf.keras.metrics.MeanAbsoluteError(name='mae'),

@@ -20,11 +20,10 @@ wandb.init(
     project="nilm_bert_transformer",
     config={
         "appliance": "kettle",  # The selected appliance must be the same for training and testing !!
-        # "loss": "mae",
         "on_threshold": 2000,
         "max_power": 3100,
-        "loss": "bert4nilm",  # The BERT4NILM custom loss is called from inside the model
-        "window_size": 32e1,  # for UK Dale, 10 time steps mean 1 minute
+        "loss": "BERT4NILM",  # The BERT4NILM custom loss is called from inside the model
+        "window_size": 128,  # for UK Dale, 10 time steps mean 1 minute
         "batch_size": 128,
         "hidden_size": 64,
         "num_heads": 4,
@@ -39,7 +38,7 @@ wandb.init(
         "output_size": 1,
         "conv_kernel_size": 5,
         "deconv_kernel_size": 3,
-        "conv_activation": "relu",
+        "conv_activation": "gelu",
         "dense_activation": "relu",
         "ff_dim": 256,  # Feed-forward network dimension
         "layer_norm_epsilon": 1e-6,

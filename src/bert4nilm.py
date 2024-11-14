@@ -1,8 +1,5 @@
 import tensorflow as tf
-import wandb
 from tensorflow.keras import layers, Model, regularizers
-
-from custom_loss import bert4nilm_loss
 
 tf.config.run_functions_eagerly(True)  # Forces eager execution in tf.function
 
@@ -59,8 +56,6 @@ class BERT4NILM(Model):
         super(BERT4NILM, self).__init__()
         # Configuration parameters
         self.batch_size = wandb_config.batch_size
-        self.max_power = wandb_config.max_power
-        self.on_threshold = wandb_config.on_threshold
         self.args = wandb_config
 
         # Model hyperparameters
@@ -212,75 +207,3 @@ class BERT4NILM(Model):
         # Step 7: Final dense layer for output
         y_pred = self.output_layer(x)  # Shape: (batch_size, window_size, 1)
         return y_pred
-
-    def appliance_state(self, y_true, y_pred):
-        """
-        Determines appliance state based on power consumption thresholds.
-
-        Args:
-            y_true (tensor): Ground truth power consumption values.
-            y_pred (tensor): Predicted power consumption values.
-
-        Returns:
-            s_true (tensor): Ground truth appliance state labels {-1, 1}.
-            s_pred (tensor): Predicted appliance state labels {-1, 1}.
-        """
-        # Clamp ground truth and predicted values to avoid noise affecting state detection
-        max_power = self.max_power
-        y_true = tf.clip_by_value(y_true, 0, max_power)
-        y_pred = tf.clip_by_value(y_pred, 0, max_power)
-
-        # Use the on-threshold to determine state; values above threshold considered "on"
-        s_true = tf.cast(y_true > self.on_threshold, dtype=tf.float32) * 2 - 1
-        s_pred = tf.cast(y_pred > self.on_threshold, dtype=tf.float32) * 2 - 1
-
-        return s_true, s_pred
-
-    def train_step(self, data):
-        # Unpack the data
-        x, y_true = data
-
-        with tf.GradientTape() as tape:
-            # Forward pass
-            y_pred = self(x, training=True)
-
-            # Ensure shapes match before proceeding
-            try:
-                y_true_elements = tf.size(y_true)
-                y_pred_elements = tf.size(y_pred)
-                tf.debugging.assert_equal(
-                    y_true_elements, y_pred_elements,
-                    message="Shape mismatch: y_true and y_pred must have the same number of elements"
-                )
-                y_pred = tf.reshape(y_pred, tf.shape(y_true))
-
-                # Get the appliance state labels and predictions
-                s_true, s_pred = self.appliance_state(y_true, y_pred)
-
-                # Calculate the custom loss
-                loss = bert4nilm_loss((y_true, y_pred), (s_true, s_pred))
-
-            except tf.errors.InvalidArgumentError as e:
-                tf.print("Error in train_step:", e)
-                return {}
-
-        # Compute gradients
-        gradients = tape.gradient(loss, self.trainable_variables)
-        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-
-        # Ensure shapes match
-        y_true = tf.ensure_shape(y_true, [None, None, 1])
-        y_pred = tf.ensure_shape(y_pred, [None, None, 1])
-
-        # Update and calculate metrics
-        self.compiled_metrics.update_state(y_true, y_pred)
-
-        # Collect all metrics to return
-        metrics = {m.name: m.result().numpy() for m in self.metrics}  # Add all metrics as numpy scalars
-        metrics["loss"] = loss.numpy()  # Convert loss to numpy for logging
-
-        # Log to wandb at the specified interval
-        if int(self.optimizer.iterations) % self.batch_size == 0:
-            wandb.log(metrics)  # Log all metrics to WandB
-
-        return metrics
