@@ -51,6 +51,9 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
         app_pw_grd_truth, app_pw_predicted = power_readings
         app_pw_predicted = tf.reshape(app_pw_predicted, tf.shape(app_pw_grd_truth))
 
+        # Clip predictions to be within the valid range [0, max_power]
+        app_pw_predicted = tf.clip_by_value(app_pw_predicted, 0, self.max_power)
+
         app_on_off_state_grd_truth, app_on_off_state_predicted = state_readings
         app_on_off_state_predicted = tf.reshape(app_on_off_state_predicted, tf.shape(app_on_off_state_grd_truth))
 
