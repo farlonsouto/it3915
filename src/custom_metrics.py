@@ -57,35 +57,20 @@ class F1ScoreMetric(tf.keras.metrics.Metric):
         self.actual_positives.assign(0.0)
 
 
-class NDEMetric(tf.keras.metrics.Metric):
-    def __init__(self, name="nde_metric", **kwargs):
-        super(NDEMetric, self).__init__(name=name, **kwargs)
-        self.numerator = self.add_weight(name="numerator", initializer="zeros")
-        self.denominator = self.add_weight(name="denominator", initializer="zeros")
-        self.epsilon = 1e-10  # Small constant to avoid division by zero
+class AccuracyMetric(tf.keras.metrics.Metric):
+    def __init__(self, on_threshold, name='acc', **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.on_threshold = on_threshold
+        self.true_positives = self.add_weight(name='tp', initializer='zeros')
+        self.total = self.add_weight(name='total', initializer='zeros')
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        # Cast to float32
-        y_true = tf.cast(y_true, tf.float32)
-        y_pred = tf.cast(y_pred, tf.float32)
+        y_true_binary = tf.cast(y_true > self.on_threshold, tf.float32)
+        y_pred_binary = tf.cast(y_pred > self.on_threshold, tf.float32)
 
-        # Clip predictions to avoid extreme values
-        y_pred = tf.clip_by_value(y_pred, -1e6, 1e6)
-
-        # Calculate numerator and denominator for NDE
-        numerator = tf.reduce_sum(tf.square(y_true - y_pred))
-        denominator = tf.reduce_sum(tf.square(y_true))
-
-        # Update metric state
-        self.numerator.assign_add(numerator)
-        self.denominator.assign_add(denominator)
+        correct_predictions = tf.equal(y_true_binary, y_pred_binary)
+        self.true_positives.assign_add(tf.reduce_sum(tf.cast(correct_predictions, tf.float32)))
+        self.total.assign_add(tf.cast(tf.size(y_true), tf.float32))
 
     def result(self):
-        # Calculate NDE with safety clipping
-        nde = tf.sqrt(tf.clip_by_value(self.numerator / (self.denominator + self.epsilon), 0.0, 1e6))
-        return nde
-
-    def reset_states(self):
-        # Reset metric state variables
-        self.numerator.assign(0.0)
-        self.denominator.assign(0.0)
+        return self.true_positives / self.total

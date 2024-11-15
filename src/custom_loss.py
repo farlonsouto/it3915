@@ -11,7 +11,7 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
         self.max_power = wandb_config.max_power
         self.on_threshold = wandb_config.on_threshold
 
-    def appliance_state(self, y_true, y_pred):
+    def __appliance_state(self, y_true, y_pred):
         """
         Determines appliance state based on power consumption thresholds.
 
@@ -34,7 +34,7 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
 
         return s_true, s_pred
 
-    def __bert4nilm_loss_computation__(self, power_readings: tuple, state_readings: tuple):
+    def __bert4nilm_loss_computation(self, power_readings: tuple, state_readings: tuple):
         """
         Custom loss function as per the equation provided by the paper 'BERT4NILM: A Bidirectional Transformer Model for
         Non-Intrusive Load Monitoring - Zhenrui Yue et. al'.
@@ -97,5 +97,5 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
         return total_loss
 
     def call(self, app_pw_grd_truth, app_pw_pred):
-        return self.__bert4nilm_loss_computation__((app_pw_grd_truth, app_pw_pred),
-                                                   self.appliance_state(app_pw_grd_truth, app_pw_pred))
+        return self.__bert4nilm_loss_computation((app_pw_grd_truth, app_pw_pred),
+                                                 self.__appliance_state(app_pw_grd_truth, app_pw_pred))

@@ -29,7 +29,7 @@ wandb.init(
         "batch_size": 64,
         "hidden_size": 256,
         "num_heads": 4,
-        "n_layers": 1,
+        "n_layers": 2,
         "dropout": 0.2,
         "learning_rate": 1e-4,
         "epochs": 10,

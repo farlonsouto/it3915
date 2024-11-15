@@ -8,7 +8,7 @@ from wandb.integration.keras import WandbMetricsLogger
 from bert4nilm import BERT4NILM
 from bert_wandb_init import wandb_config
 from custom_loss import Bert4NilmLoss
-from custom_metrics import MREMetric, F1ScoreMetric, NDEMetric
+from custom_metrics import MREMetric, F1ScoreMetric, AccuracyMetric
 from gpu_memory_allocation import set_gpu_memory_growth
 from time_series_uk_dale import TimeSeries
 
@@ -45,40 +45,29 @@ def create_model():
     # Compile the model
     model.compile(
         optimizer=optimizer,
-        loss="bert4nilm_loss",
+        loss=loss_fn,
         metrics=[
-            'accuracy',
+            AccuracyMetric(wandb_config.on_threshold),
             tf.keras.metrics.MeanAbsoluteError(name='mae'),
-            tf.keras.metrics.MeanSquaredError(name='mse'),
             MREMetric(),
-            F1ScoreMetric(),
-            NDEMetric()
+            F1ScoreMetric()
         ]
     )
 
     return model
 
 
-is_HPC = False  # len(sys.argv) > 0 and sys.argv[0].lower() == 'hpc'
-
+# Set GPU memory growth
 set_gpu_memory_growth()
 
-if is_HPC:
-    strategy = tf.distribute.MirroredStrategy()
-    with strategy.scope():
-        bert_model = create_model()
-else:
-    bert_model = create_model()
+bert_model = create_model()
 
-# path_to_dataset = '../datasets/AMPds2.h5'  # '../datasets/ukdale.h5'
 path_to_dataset = '../datasets/ukdale.h5'
 print("Fetching data from the dataset located at ", path_to_dataset)
 dataset = DataSet(path_to_dataset)
 
 # time series handler for the UK Dale dataset
-timeSeries = TimeSeries(dataset, [1, 3, 4, 5], [2],
-                        wandb_config.window_size, wandb_config.batch_size,
-                        appliance=wandb_config.appliance)
+timeSeries = TimeSeries(dataset, [1, 3, 4, 5], [2], wandb_config)
 
 # time series handler for the AMPds2dataset
 # timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,

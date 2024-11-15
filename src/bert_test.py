@@ -4,7 +4,7 @@ from nilmtk import DataSet
 
 from bert4nilm import BERT4NILM
 from bert_wandb_init import wandb_config
-from custom_metrics import MREMetric, F1ScoreMetric, NDEMetric
+from custom_metrics import MREMetric, F1ScoreMetric, AccuracyMetric
 from gpu_memory_allocation import set_gpu_memory_growth
 from time_series_uk_dale import TimeSeries
 
@@ -24,12 +24,10 @@ print("Model architecture rebuilt and weights loaded successfully!")
 # Compile the model for evaluation
 bert_model.compile(
     metrics=[
-        'accuracy',
+        AccuracyMetric(wandb_config.on_threshold),
         tf.keras.metrics.MeanAbsoluteError(name='mae'),
-        tf.keras.metrics.MeanSquaredError(name='mse'),
         MREMetric(),
-        F1ScoreMetric(),
-        NDEMetric()
+        F1ScoreMetric()
     ]
 )
 
@@ -41,9 +39,8 @@ print("Model loaded successfully!")
 dataset = DataSet('../datasets/ukdale.h5')
 
 # Prepare the test data generator
-timeSeries = TimeSeries(
-    dataset, [2], [2], wandb_config.window_size, wandb_config.batch_size, appliance=wandb_config.appliance
-)
+timeSeries = TimeSeries(dataset, [2], [2], wandb_config)
+
 test_gen = timeSeries.getTestDataGenerator()
 
 # Evaluate the model on the test data
