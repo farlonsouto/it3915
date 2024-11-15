@@ -6,7 +6,7 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
     """ Encapsulates a normalized variation of the loss function described in the paper BERT4NILM: A Bidirectional
     Transformer Model for Non-Intrusive Load Monitoring, Zhenrui Yue et. al"""
 
-    def __init__(self, wandb_config, reduction=losses_utils.ReductionV2.AUTO, name="BERT4NILM"):
+    def __init__(self, wandb_config, reduction=losses_utils.ReductionV2.AUTO, name="bert4nilm_loss"):
         super().__init__(reduction, name)
         self.max_power = wandb_config.max_power
         self.on_threshold = wandb_config.on_threshold

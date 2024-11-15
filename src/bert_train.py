@@ -24,7 +24,8 @@ def create_model():
     # Mapping the loss function from WandB configuration to TensorFlow's predefined loss functions
     loss_fn_mapping = {
         "mse": tf.keras.losses.MeanSquaredError(),
-        "mae": tf.keras.losses.MeanAbsoluteError()
+        "mae": tf.keras.losses.MeanAbsoluteError(),
+        "bert4nilm_loss": Bert4NilmLoss(wandb_config)
     }
 
     # Get the loss function from the WandB config
@@ -44,7 +45,7 @@ def create_model():
     # Compile the model
     model.compile(
         optimizer=optimizer,
-        loss=Bert4NilmLoss(wandb_config),
+        loss="bert4nilm_loss",
         metrics=[
             'accuracy',
             tf.keras.metrics.MeanAbsoluteError(name='mae'),

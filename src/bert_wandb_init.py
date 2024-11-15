@@ -22,7 +22,7 @@ wandb.init(
         "appliance": "kettle",  # The selected appliance must be the same for training and testing !!
         "on_threshold": 2000,
         "max_power": 3100,
-        "loss": "BERT4NILM",  # The BERT4NILM custom loss is called from inside the model
+        "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
         "window_size": 300,  # for UK Dale, 10 time steps mean 1 minute
         "batch_size": 64,
         "hidden_size": 256,
