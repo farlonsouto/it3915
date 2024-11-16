@@ -1,7 +1,7 @@
 program: bert_train.py
 method: bayes
 metric:
-  name: "loss"
+  name: "mae"
   goal: minimize
 parameters:
   tau:
@@ -28,7 +28,7 @@ parameters:
   batch_size:
     distribution: categorical
     values: [ 128, 256, 512, 1024 ]
-  head_size:
+  hidden_size:
     distribution: categorical
     values: [ 32, 64, 128, 256 ]
   num_heads:
