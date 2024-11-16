@@ -133,28 +133,58 @@ class TimeSeriesDataGenerator(Sequence):
         return np.array(batch_X), np.array(batch_y)
 
     def __process_data(self, mains_power, appliance_power):
+        # ClampPING the appliance power between on_threshold and max_power
+        appliance_power = appliance_power.clip(lower=self.on_threshold, upper=self.max_power)
 
-        # Clamping the appliance power between the on_threshold and max_power:
-        appliance_power = appliance_power.clip(lower=self.on_threshold - 1, upper=self.max_power + 1)
-
-        # Drop duplicate indices
+        # Remove any possible duplicated indices
         mains_power = mains_power[~mains_power.index.duplicated(keep='first')]
 
-        # Down sample the aggregated reading to 6s and replace any NaN with the nearest value up to 1 time step away
+        # Down sampling mains power to 6s intervals and handling missing values
         mains_power = mains_power.resample('6s').nearest(limit=1)
-
-        # Align the series by their indices
         mains_power, appliance_power = mains_power.align(appliance_power, join='inner', axis=0)
+        mains_power = mains_power.ffill().bfill()
 
-        # Fill missing values, first fw and then bw propagation fill
-        if mains_power.isnull().any():
-            mains_power = mains_power.ffill().bfill()
-
-        # Normalize mains power
+        # Normalizing only the mains power
         mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
+
+        # Converting appliance power to binary "on/off" states, for convenience
+        appliance_status = appliance_power > self.on_threshold
+
+        # Applying minimum on/off duration constraints
+        appliance_status = self._apply_min_durations(appliance_status, self.min_on_duration, self.min_off_duration)
+
+        # Basically turning off the appliance when it was not ON for the minimum duration
+        appliance_power = appliance_power * appliance_status
 
         # Convert to numpy arrays
         mains_power = mains_power.values.reshape(-1, 1)
         appliance_power = appliance_power.values.reshape(-1, 1)
 
         return mains_power, appliance_power
+
+    def _apply_min_durations(self, appliance_status, min_on_duration, min_off_duration):
+        """
+        Apply minimum on and off durations to the binary appliance status.
+
+        Parameters:
+        - appliance_status: Pandas Series of binary on/off states.
+        - min_on_duration: Minimum duration (in seconds) an appliance must stay "on".
+        - min_off_duration: Minimum duration (in seconds) an appliance must stay "off".
+
+        Returns:
+        - Filtered binary appliance status.
+        """
+        appliance_status = appliance_status.astype(int)  # Ensure binary states are integers
+        status_changes = appliance_status.diff().fillna(0)  # Identify state changes
+
+        # Filters short "on" durations
+        on_groups = (status_changes == 1).cumsum() * appliance_status
+        on_durations = on_groups.groupby(on_groups).transform('count') * 6  # Convert to seconds (6s intervals)
+        appliance_status[on_durations < min_on_duration] = 0
+
+        # Filters short "off" durations
+        off_groups = (status_changes == -1).cumsum() * (1 - appliance_status)
+        off_durations = off_groups.groupby(off_groups).transform('count') * 6  # Convert to seconds (6s intervals)
+        appliance_status[off_durations < min_off_duration] = 1
+
+        return appliance_status
