@@ -3,13 +3,22 @@ import wandb
 from nilmtk import DataSet
 
 from bert4nilm import BERT4NILM
-from bert_wandb_init import wandb_config
+from bert_wandb_init import config
 from custom_metrics import MREMetric, F1ScoreMetric, AccuracyMetric
 from gpu_memory_allocation import set_gpu_memory_growth
 from time_series_uk_dale import TimeSeries
 
 # Set GPU memory growth
 set_gpu_memory_growth()
+
+wandb.init(
+    project="nilm_bert_transformer",
+    entity="bert_test",
+    config=config
+)
+
+# Retrieve the configuration from WandB
+wandb_config = wandb.config
 
 # Rebuild the model architecture
 bert_model = BERT4NILM(wandb_config)

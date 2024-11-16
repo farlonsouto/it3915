@@ -6,7 +6,7 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 from wandb.integration.keras import WandbMetricsLogger
 
 from bert4nilm import BERT4NILM
-from bert_wandb_init import wandb_config
+from bert_wandb_init import config
 from custom_loss import Bert4NilmLoss
 from custom_metrics import MREMetric, F1ScoreMetric, AccuracyMetric
 from gpu_memory_allocation import set_gpu_memory_growth
@@ -59,6 +59,15 @@ def create_model():
 
 # Set GPU memory growth
 set_gpu_memory_growth()
+
+wandb.init(
+    project="nilm_bert_transformer",
+    entity="bert_training",
+    config=config
+)
+
+# Retrieve the configuration from WandB
+wandb_config = wandb.config
 
 bert_model = create_model()
 
