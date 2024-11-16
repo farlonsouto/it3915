@@ -135,7 +135,7 @@ class TimeSeriesDataGenerator(Sequence):
     def __process_data(self, mains_power, appliance_power):
 
         # Clamping the appliance power between the on_threshold and max_power:
-        appliance_power = appliance_power.clip(lower=self.on_threshold, upper=self.max_power)
+        appliance_power = appliance_power.clip(lower=self.on_threshold - 1, upper=self.max_power + 1)
 
         # Drop duplicate indices
         mains_power = mains_power[~mains_power.index.duplicated(keep='first')]

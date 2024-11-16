@@ -27,7 +27,7 @@ bert_model.compile(
         AccuracyMetric(wandb_config.on_threshold),
         tf.keras.metrics.MeanAbsoluteError(name='mae'),
         MREMetric(),
-        F1ScoreMetric()
+        F1ScoreMetric(on_threshold=wandb_config.on_threshold)
     ]
 )
 

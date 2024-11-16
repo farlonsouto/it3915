@@ -79,7 +79,7 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
         log_sigmoid_loss = tf.reduce_mean(
             tf.math.log(1 + tf.exp(-app_on_off_state_predicted * app_on_off_state_grd_truth)))
 
-        # L1-norm (MAE) over a subset O (assuming the subset O is all data points here)
+        # L1-norm (MAE) over a subset O (assuming that the subset O corresponds to all the data points)
         l1_loss = tf.reduce_mean(tf.abs(app_pw_predicted - app_pw_grd_truth))
 
         # The complete original formula:
@@ -92,7 +92,7 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
 
         # The suggested variation where the terms were normalized and the term regarding the appliance state domains
         # the function
-        total_loss = norm_mse + norm_l1_loss + norm_kl_diverg + (3 * norm_log_sigm_loss)
+        total_loss = norm_mse + norm_l1_loss + norm_kl_diverg + norm_log_sigm_loss
 
         return total_loss
 
