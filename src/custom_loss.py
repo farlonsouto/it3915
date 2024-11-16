@@ -10,6 +10,7 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
         super().__init__(reduction, name)
         self.max_power = wandb_config.max_power
         self.on_threshold = wandb_config.on_threshold
+        self.lambda_val = wandb_config.lambda_val
 
     def __appliance_state(self, y_true, y_pred):
         """
@@ -81,9 +82,10 @@ class Bert4NilmLoss(tf.keras.losses.Loss):
 
         # L1-norm (MAE) over a subset O (assuming that the subset O corresponds to all the data points)
         l1_loss = tf.reduce_mean(tf.abs(app_pw_predicted - app_pw_grd_truth))
+        l1_loss = l1_loss * self.lambda_val  # For some appliances it is meaningful. For the kettle lambdas just 1.
 
         # The complete original formula:
-        # total_loss = mse_loss + kl_diverg + log_sigmoid_loss + lambda_val * l1_loss
+        # total_loss = mse_loss + kl_diverg + log_sigmoid_loss + self.lambda_val * l1_loss
 
         norm_mse = (mse_loss / 1 + mse_loss)
         norm_l1_loss = (l1_loss / 1 + l1_loss)
