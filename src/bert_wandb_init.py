@@ -22,24 +22,24 @@ config = {
     "min_on_duration": 12,  # in seconds
     "min_off_duration": 0,  # in seconds
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
-    "window_size": 128,  # for UK Dale, 10 time steps mean 1 minute
-    "batch_size": 64,
-    "hidden_size": 256,
-    "num_heads": 4,
+    "window_size": 64,  # for UK Dale, 10 time steps mean 1 minute
+    "batch_size": 128,
+    "hidden_size": 128,
+    "num_heads": 2,
     "n_layers": 2,
     "dropout": 0.2,
     "learning_rate": 1e-4,
     "epochs": 10,
     "optimizer": "adam",
     "tau": 1.0,
-    "lambda_val": 0.1,
+    "lambda_val": 1,  # inside the loss function
     "masking_portion": 0.25,
     "output_size": 1,
     "conv_kernel_size": 3,
-    "deconv_kernel_size": 3,
+    "deconv_kernel_size": 4,
     "conv_activation": "gelu",
     "dense_activation": "relu",
-    "ff_dim": 256,  # Feed-forward network dimension
+    "ff_dim": 128,  # Feed-forward network dimension
     "layer_norm_epsilon": 1e-2,
     "kernel_initializer": "glorot_uniform",
     "bias_initializer": "zeros",

@@ -62,7 +62,6 @@ set_gpu_memory_growth()
 
 wandb.init(
     project="nilm_bert_transformer",
-    entity="bert_training",
     config=config
 )
 
