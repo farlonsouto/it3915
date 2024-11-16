@@ -6,8 +6,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1                      # Request 1 GPU
 #SBATCH --mem=64G                         # Request 64GB memory
-#SBATCH --job-name="WandB-Sweep"
-#SBATCH --output=sweep.log                # Output log file
+#SBATCH --job-name="Bert4Nilm_Training"
+#SBATCH --output=training.log                # Output log file
 #SBATCH --mail-user=farlond@stud.ntnu.no  # Email for notifications
 #SBATCH --mail-type=ALL
 
@@ -29,7 +29,11 @@ module load Anaconda3/2023.09-0
 module load cuDNN/8.5.0.96-CUDA-11.7.0
 conda activate nnenv
 
-# Run the WandB agent command for the sweep
+# Enables WandB and ensurs it syncs with the cloud:
+wandb enabled
+wandb online
+
+# Triggers the training script:
 python bert_train.py
 
 # Display system information for debugging
