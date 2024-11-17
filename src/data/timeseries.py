@@ -4,7 +4,7 @@ import warnings
 import pandas as pd
 from nilmtk import DataSet
 
-from data.data_generator import TimeSeriesDataGenerator
+from .generator import TimeSeriesDataGenerator
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
