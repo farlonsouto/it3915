@@ -168,16 +168,13 @@ class BERT4NILM(Model):
         # Multiply by max power and clamp
         pred_appl_power = tf.clip_by_value(pred_appl_power * self.max_power, 0, self.max_power)
 
-        # Determine appliance status
-        pred_appl_status = tf.cast(pred_appl_power > self.on_threshold, tf.float32)
-
-        return pred_appl_power, pred_appl_status
+        return pred_appl_power
 
     def train_step(self, data):
         inputs, targets = data
 
         with tf.GradientTape() as tape:
-            pred_appl_power, _ = self(inputs, training=True)
+            pred_appl_power = self(inputs, training=True)
             loss = self.compiled_loss(targets, pred_appl_power)
 
         gradients = tape.gradient(loss, self.trainable_variables)
