@@ -1,4 +1,4 @@
-program: bert_train.py
+program: train.py
 method: bayes
 metric:
   name: "mae"

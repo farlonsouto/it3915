@@ -23,7 +23,7 @@ config = {
     "min_off_duration": 0,  # in seconds
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
     "window_size": 64,  # for UK Dale, 10 time steps mean 1 minute
-    "batch_size": 128,
+    "batch_size": 256,
     "hidden_size": 128,
     "num_heads": 2,
     "n_layers": 2,

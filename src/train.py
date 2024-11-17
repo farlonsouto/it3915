@@ -1,60 +1,12 @@
 import numpy as np
-import tensorflow as tf
 import wandb
 from nilmtk import DataSet
 from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 
-from bert4nilm import BERT4NILM
-from bert_wandb_init import config
-from custom_loss import Bert4NilmLoss
-from custom_metrics import F1Score, Accuracy, MeanRelativeError
-from gpu_memory_allocation import set_gpu_memory_growth
-from time_series_uk_dale import TimeSeries
-
-
-def create_model():
-    # Compile the model using the WandB configurations and the custom loss
-    optimizer = tf.keras.optimizers.Adam(
-        learning_rate=wandb_config.learning_rate,
-        clipnorm=1.0,  # gradient clipping
-        clipvalue=0.5
-    )
-
-    # Mapping the loss function from WandB configuration to TensorFlow's predefined loss functions
-    loss_fn_mapping = {
-        "mse": tf.keras.losses.MeanSquaredError(),
-        "mae": tf.keras.losses.MeanAbsoluteError(),
-        "bert4nilm_loss": Bert4NilmLoss(wandb_config)
-    }
-
-    # Get the loss function from the WandB config
-    loss_fn = loss_fn_mapping.get(wandb_config.loss, tf.keras.losses.MeanSquaredError())  # Default to MSE
-
-    # Instantiate the BERT4NILM model
-    model = BERT4NILM(wandb_config)
-
-    # Build the model by providing an input shape
-    # NOTICE: The 3D input_shape is (Batch size, window size, features) out of the time series. Where:
-    # `None` stands for a flexible, variable batch size.
-    # 'window_size` is the number of time steps
-    # `1` corresponds the number of features (for now, only one: the power consumption)
-    model.build((None, wandb_config.window_size, 1))
-
-    # Use bert4nilm_loss from bert_loss.py, and pass any required arguments from wandb_config
-    # Compile the model
-    model.compile(
-        optimizer=optimizer,
-        loss=loss_fn,
-        metrics=[
-            Accuracy(wandb_config.on_threshold),
-            tf.keras.metrics.MeanAbsoluteError(name='MAE'),
-            MeanRelativeError(name='MRE'),
-            F1Score(on_threshold=wandb_config.on_threshold)
-        ]
-    )
-
-    return model
-
+from data.timeseries import TimeSeries
+from gpu.gpu_memory_allocation import set_gpu_memory_growth
+from model_factory import create_model
+from wandb_init import config
 
 # Set GPU memory growth
 set_gpu_memory_growth()
@@ -67,7 +19,7 @@ wandb.init(
 # Retrieve the configuration from WandB
 wandb_config = wandb.config
 
-bert_model = create_model()
+bert_model = create_model(wandb_config)
 
 path_to_dataset = '../datasets/ukdale.h5'
 print("Fetching data from the dataset located at ", path_to_dataset)

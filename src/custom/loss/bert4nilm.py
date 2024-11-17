@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.python.keras.utils import losses_utils
 
 
-class Bert4NilmLoss(tf.keras.losses.Loss):
+class LossFunction(tf.keras.losses.Loss):
     """ Encapsulates a normalized variation of the loss function described in the paper BERT4NILM: A Bidirectional
     Transformer Model for Non-Intrusive Load Monitoring, Zhenrui Yue et. al"""
 

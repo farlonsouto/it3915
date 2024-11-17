@@ -2,11 +2,12 @@ import tensorflow as tf
 import wandb
 from nilmtk import DataSet
 
-from bert4nilm import BERT4NILM
-from bert_wandb_init import config
-from custom_metrics import F1Score, Accuracy, MeanRelativeError
-from gpu_memory_allocation import set_gpu_memory_growth
-from time_series_uk_dale import TimeSeries
+from data.timeseries import TimeSeries
+from gpu.gpu_memory_allocation import set_gpu_memory_growth
+from model.bert4nilm import BERT4NILM
+from custom.metric.classification import Accuracy, F1Score
+from custom.metric.regression import MeanRelativeError
+from wandb_init import config
 
 # Set GPU memory growth
 set_gpu_memory_growth()

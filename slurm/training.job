@@ -1,13 +1,13 @@
 #!/bin/sh
 #SBATCH --partition=GPUQ                  # GPU partition
 #SBATCH --account=ie-idi                  # Replace with your valid account
-#SBATCH --time=96:00:00                   # Set the time limit for the sweep
+#SBATCH --time=72:00:00                   # Set the time limit for the sweep
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1                      # Request 1 GPU
 #SBATCH --mem=64G                         # Request 64GB memory
-#SBATCH --job-name="WandB-Sweep"
-#SBATCH --output=sweep.log                # Output log file
+#SBATCH --job-name="Bert4Nilm_Training"
+#SBATCH --output=training.log                # Output log file
 #SBATCH --mail-user=farlond@stud.ntnu.no  # Email for notifications
 #SBATCH --mail-type=ALL
 
@@ -28,11 +28,13 @@ echo "          Total used cores: $SLURM_NTASKS"
 module load Anaconda3/2023.09-0
 module load cuDNN/8.5.0.96-CUDA-11.7.0
 conda activate nnenv
+
+# Enables WandB and ensurs it syncs with the cloud:
 wandb enabled
 wandb online
 
-# Run the WandB agent command for the sweep. The sweep is configured to trigger the training script.
-wandb agent farlonsouto-ntnu/nilm_bert_transformer/bmgze4ej
+# Triggers the training script:
+python ../src/train.py
 
 # Display system information for debugging
 uname -a
