@@ -1,4 +1,5 @@
 import tensorflow as tf
+import wandb
 from tensorflow.keras import layers, Model, regularizers
 
 tf.config.run_functions_eagerly(True)  # Forces eager execution in tf.function
@@ -207,3 +208,25 @@ class BERT4NILM(Model):
         # Step 7: Final dense layer for output
         y_pred = self.output_layer(x)  # Shape: (batch_size, window_size, 1)
         return y_pred
+
+    def train_step(self, data):
+        inputs, targets = data
+
+        with tf.GradientTape() as tape:
+            predictions = self(inputs, training=True)  # Forward pass
+            loss = self.compiled_loss(targets, predictions)  # Compute loss
+
+        # Backpropagation
+        gradients = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        # Update metrics (both stateful and non-stateful)
+        self.compiled_metrics.update_state(targets, predictions)
+        metrics = {m.name: m.result().numpy() for m in self.metrics}  # Add all metrics as numpy scalars
+        metrics["loss"] = loss.numpy()  # Convert loss to numpy for logging
+
+        # Log to wandb at the specified interval
+        if int(self.optimizer.iterations) % self.batch_size == 0:
+            wandb.log(metrics)  # Log all metrics to WandB
+
+        return metrics

@@ -3,12 +3,11 @@ import tensorflow as tf
 import wandb
 from nilmtk import DataSet
 from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
-from wandb.integration.keras import WandbMetricsLogger
 
 from bert4nilm import BERT4NILM
 from bert_wandb_init import config
 from custom_loss import Bert4NilmLoss
-from custom_metrics import MREMetric, F1ScoreMetric, AccuracyMetric
+from custom_metrics import F1Score, Accuracy, MeanRelativeError
 from gpu_memory_allocation import set_gpu_memory_growth
 from time_series_uk_dale import TimeSeries
 
@@ -47,10 +46,10 @@ def create_model():
         optimizer=optimizer,
         loss=loss_fn,
         metrics=[
-            AccuracyMetric(wandb_config.on_threshold),
-            tf.keras.metrics.MeanAbsoluteError(name='mae'),
-            MREMetric(),
-            F1ScoreMetric(on_threshold=wandb_config.on_threshold)
+            Accuracy(wandb_config.on_threshold),
+            tf.keras.metrics.MeanAbsoluteError(name='MAE'),
+            MeanRelativeError(name='MRE'),
+            F1Score(on_threshold=wandb_config.on_threshold)
         ]
     )
 
@@ -98,7 +97,7 @@ assert y_sample.shape == (wandb_config.batch_size, wandb_config.window_size, 1),
 print("... The training data is available. Starting training ...")
 
 my_callbacks = [
-    WandbMetricsLogger(log_freq='epoch'),
+    # WandbMetricsLogger(log_freq='batch'),
     EarlyStopping(patience=10, monitor='val_loss', restore_best_weights=True),
     ModelCheckpoint('../models/bert_model', save_best_only=True, monitor='loss', save_format="tf")
 ]

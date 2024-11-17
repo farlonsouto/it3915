@@ -1,10 +1,10 @@
 import tensorflow as tf
 
 
-class MREMetric(tf.keras.metrics.Metric):
-    def __init__(self, name="mre", **kwargs):
-        super(MREMetric, self).__init__(name=name, **kwargs)
-        self.mre = self.add_weight(name="mre", initializer="zeros")
+class MeanRelativeError(tf.keras.metrics.Metric):
+    def __init__(self, name="MRE", **kwargs):
+        super(MeanRelativeError, self).__init__(name=name, **kwargs)
+        self.mre = self.add_weight(name="MRE", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         mre = tf.reduce_mean(tf.abs((y_true - y_pred) / (tf.reduce_mean(y_true) + 1e-7)))
@@ -17,40 +17,29 @@ class MREMetric(tf.keras.metrics.Metric):
         self.mre.assign(0.0)
 
 
-class F1ScoreMetric(tf.keras.metrics.Metric):
-    def __init__(self, on_threshold, name='f1_score', **kwargs):
-        super(F1ScoreMetric, self).__init__(name=name, **kwargs)
+class F1Score(tf.keras.metrics.Metric):
+    def __init__(self, on_threshold, name='F1', **kwargs):
+        super(F1Score, self).__init__(name=name, **kwargs)
         self.on_threshold = on_threshold
-        self.true_positives = self.add_weight(name='tp', initializer='zeros')
-        self.false_positives = self.add_weight(name='fp', initializer='zeros')
-        self.false_negatives = self.add_weight(name='fn', initializer='zeros')
+        self.precision = tf.keras.metrics.Precision()
+        self.recall = tf.keras.metrics.Recall()
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        y_true = tf.cast(y_true > self.on_threshold, tf.float32)
-        y_pred = tf.cast(y_pred > self.on_threshold, tf.float32)
+        # Convert power measurements to binary values
+        y_true_binary = tf.cast(y_true > self.on_threshold, tf.float32)
+        y_pred_binary = tf.cast(y_pred > self.on_threshold, tf.float32)
 
-        true_positives = tf.reduce_sum(y_true * y_pred)
-        false_positives = tf.reduce_sum((1 - y_true) * y_pred)
-        false_negatives = tf.reduce_sum(y_true * (1 - y_pred))
-
-        self.true_positives.assign_add(true_positives)
-        self.false_positives.assign_add(false_positives)
-        self.false_negatives.assign_add(false_negatives)
+        self.precision.update_state(y_true_binary, y_pred_binary, sample_weight)
+        self.recall.update_state(y_true_binary, y_pred_binary, sample_weight)
 
     def result(self):
-        precision = self.true_positives / (self.true_positives + self.false_positives + tf.keras.backend.epsilon())
-        recall = self.true_positives / (self.true_positives + self.false_negatives + tf.keras.backend.epsilon())
-
+        precision = self.precision.result()
+        recall = self.recall.result()
         return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
 
-    def reset_states(self):
-        self.true_positives.assign(0)
-        self.false_positives.assign(0)
-        self.false_negatives.assign(0)
 
-
-class AccuracyMetric(tf.keras.metrics.Metric):
-    def __init__(self, on_threshold, name='acc', **kwargs):
+class Accuracy(tf.keras.metrics.Metric):
+    def __init__(self, on_threshold, name='Acc', **kwargs):
         super().__init__(name=name, **kwargs)
         self.on_threshold = on_threshold
         self.true_positives = self.add_weight(name='tp', initializer='zeros')

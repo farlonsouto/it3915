@@ -4,7 +4,7 @@ from nilmtk import DataSet
 
 from bert4nilm import BERT4NILM
 from bert_wandb_init import config
-from custom_metrics import MREMetric, F1ScoreMetric, AccuracyMetric
+from custom_metrics import F1Score, Accuracy, MeanRelativeError
 from gpu_memory_allocation import set_gpu_memory_growth
 from time_series_uk_dale import TimeSeries
 
@@ -32,10 +32,10 @@ print("Model architecture rebuilt and weights loaded successfully!")
 # Compile the model for evaluation
 bert_model.compile(
     metrics=[
-        AccuracyMetric(wandb_config.on_threshold),
-        tf.keras.metrics.MeanAbsoluteError(name='mae'),
-        MREMetric(),
-        F1ScoreMetric(on_threshold=wandb_config.on_threshold)
+        Accuracy(wandb_config.on_threshold),
+        tf.keras.metrics.MeanAbsoluteError(name='MAE'),
+        MeanRelativeError(name='MRE'),
+        F1Score(on_threshold=wandb_config.on_threshold)
     ]
 )
 

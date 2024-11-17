@@ -95,7 +95,7 @@ class TimeSeriesDataGenerator(Sequence):
             for mains_df, appliance_df in zip(mains.load(chunksize=chunk_size), appliance.load(chunksize=chunk_size)):
                 mains_power_apparent = mains_df[('power', 'apparent')]
                 appliance_power_active = appliance_df[('power', 'active')]
-                mains_power, appliance_power = self.__process_data(mains_power_apparent, appliance_power_active)
+                mains_power, appliance_power = self._process_data(mains_power_apparent, appliance_power_active)
                 for i in range(0, len(mains_power) - self.window_size + 1, self.window_size):
                     yield mains_power[i:i + self.window_size], appliance_power[i:i + self.window_size]
 
@@ -132,7 +132,7 @@ class TimeSeriesDataGenerator(Sequence):
 
         return np.array(batch_X), np.array(batch_y)
 
-    def __process_data(self, mains_power, appliance_power):
+    def _process_data(self, mains_power, appliance_power):
         # ClampPING the appliance power between on_threshold and max_power
         appliance_power = appliance_power.clip(lower=self.on_threshold, upper=self.max_power)
 
