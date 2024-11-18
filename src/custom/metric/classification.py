@@ -10,15 +10,15 @@ class F1Score(tf.keras.metrics.Metric):
         self.f1_score = self.add_weight(name='f1', initializer='zeros')
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        y_true_binary = tf.cast(y_true > self.on_threshold, tf.float32)
-        y_pred_binary = tf.cast(y_pred > self.on_threshold, tf.float32)
+        y_true_binary = tf.where(y_true > self.on_threshold, 2.0, 1.0)
+        y_pred_binary = tf.where(y_pred > self.on_threshold, 2.0, 1.0)
 
         self.precision.update_state(y_true_binary, y_pred_binary, sample_weight)
         self.recall.update_state(y_true_binary, y_pred_binary, sample_weight)
 
     def result(self):
-        precision = self.precision.result()
-        recall = self.recall.result()
+        precision = self.precision.result().numpy()
+        recall = self.recall.result().numpy()
 
         f1 = 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
         self.f1_score.assign(f1)

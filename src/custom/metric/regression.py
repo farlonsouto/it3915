@@ -7,6 +7,10 @@ class MeanRelativeError(tf.keras.metrics.Metric):
         self.mre = self.add_weight(name="MRE", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
+        # Evaluate tensors in this session:
+        # print("MRE debug - Ground truth: ", y_true)
+        # print("MRE debug -    Predicted: ", y_pred)
+
         mre = tf.reduce_mean(tf.abs((y_true - y_pred) / (tf.reduce_mean(y_true) + 1e-7)))
         self.mre.assign(mre)
 

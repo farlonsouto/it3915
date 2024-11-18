@@ -69,19 +69,20 @@ class TimeSeriesDataGenerator(Sequence):
         return np.array(batch_X), np.array(batch_y)
 
     def _process_data(self, mains_power, appliance_power):
-        # ClampPING the appliance power between on_threshold and max_power
-        appliance_power = appliance_power.clip(lower=self.on_threshold, upper=self.max_power)
-
         # Remove any possible duplicated indices
         mains_power = mains_power[~mains_power.index.duplicated(keep='first')]
 
         # Down sampling mains power to 6s intervals and handling missing values
         mains_power = mains_power.resample('6s').nearest(limit=1)
-        mains_power, appliance_power = mains_power.align(appliance_power, join='inner', axis=0)
-        mains_power = mains_power.ffill().bfill()
 
-        # Normalizing only the mains power
-        mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
+        # forward filling all time gaps shorter than three minutes
+        mains_power = mains_power.ffill(limit=30).bfill()  # 30 * 6 = 180s = 3min
+
+        # Aligning the two time series
+        mains_power, appliance_power = mains_power.align(appliance_power, join='inner', axis=0)
+
+        # Clamps the appliance power between on_threshold and max_power
+        appliance_power = appliance_power.clip(lower=self.on_threshold, upper=self.max_power)
 
         # Converting appliance power to binary "on/off" states, for convenience
         appliance_status = appliance_power > self.on_threshold
@@ -91,6 +92,9 @@ class TimeSeriesDataGenerator(Sequence):
 
         # Basically turning off the appliance when it was not ON for the minimum duration
         appliance_power = appliance_power * appliance_status
+
+        # Normalizing only the mains power
+        mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
 
         # Convert to numpy arrays
         mains_power = mains_power.values.reshape(-1, 1)
