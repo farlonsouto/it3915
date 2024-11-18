@@ -2,28 +2,14 @@ import tensorflow as tf
 
 
 class F1Score(tf.keras.metrics.Metric):
-
     def __init__(self, on_threshold, name='F1', **kwargs):
-        """
-        Initializes F1Score metric with on_threshold and other keyword arguments.
-
-        Args:
-            on_threshold: float, the power value above which the appliance is considered "on".
-            name: str, the name of the metric. Defaults to 'F1'.
-            **kwargs: additional keyword arguments to be passed to the parent class
-                (tf.keras.metrics.Metric).
-
-        Returns:
-            F1Score instance
-        """
-
         super(F1Score, self).__init__(name=name, **kwargs)
         self.on_threshold = on_threshold
         self.precision = tf.keras.metrics.Precision()
         self.recall = tf.keras.metrics.Recall()
+        self.f1_score = self.add_weight(name='f1', initializer='zeros')
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        # Convert power measurements to binary values
         y_true_binary = tf.cast(y_true > self.on_threshold, tf.float32)
         y_pred_binary = tf.cast(y_pred > self.on_threshold, tf.float32)
 
@@ -33,7 +19,15 @@ class F1Score(tf.keras.metrics.Metric):
     def result(self):
         precision = self.precision.result()
         recall = self.recall.result()
-        return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
+
+        f1 = 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
+        self.f1_score.assign(f1)
+        return self.f1_score
+
+    def reset_states(self):
+        self.precision.reset_states()
+        self.recall.reset_states()
+        self.f1_score.assign(0.)
 
 
 class Accuracy(tf.keras.metrics.Metric):
