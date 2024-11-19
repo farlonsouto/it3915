@@ -7,11 +7,20 @@ from ..custom.metric.regression import MeanRelativeError
 class TestMetrics(tf.test.TestCase):
     def test_f1_score_all_zeros(self):
         f1 = F1Score(on_threshold=0.5)
-        y_true = tf.constant([0.0, 0.0, 0.0])
-        y_pred = tf.constant([0.0, 0.0, 0.0])
+        y_true = tf.constant([0.0, 0.0, 0.0, 0.0])
+        y_pred = tf.constant([0.0, 0.0, 0.0, 0.0])
 
         f1.update_state(y_true, y_pred)
-        self.assertAllClose(f1.result(), 1.0)  # Precision and recall both 0 -> F1 should be 0
+        self.assertAllClose(f1.result(), 0.0)  # Precision and recall both 0 -> F1 should be 0
+        f1.reset_states()
+
+    def test_f1_score_one_pred_nonzero_above_threshold(self):
+        f1 = F1Score(on_threshold=0.5)
+        y_true = tf.constant([0.0, 0.0, 0.0, 0.0])
+        y_pred = tf.constant([0.0, 0.0, 0.0, 1.0])
+
+        f1.update_state(y_true, y_pred)
+        self.assertAllClose(f1.result(), 0.0)  # Precision and recall both 0 -> F1 should be 0
         f1.reset_states()
 
     def test_f1_score_all_nonzeros_below_threshold(self):
@@ -20,7 +29,7 @@ class TestMetrics(tf.test.TestCase):
         y_pred = tf.constant([0.1, 0.2, 0.3])
 
         f1.update_state(y_true, y_pred)
-        self.assertAllClose(f1.result(), 1.0)  # Perfect match -> F1 should be 1.0
+        self.assertAllClose(f1.result(), 0.0)  # Perfect match -> F1 should be 1.0
         f1.reset_states()
 
     def test_accuracy_all_zeros(self):
@@ -61,7 +70,7 @@ class TestMetrics(tf.test.TestCase):
         self.assertAllClose(mre.result(), 0.05, atol=1e-2)  # Adjust the tolerance for small numbers
         mre.reset_states()
 
-    def test_f1_score_edge_case(self):
+    def test_f1_score_non_zeros_above(self):
         f1 = F1Score(on_threshold=0.5)
         y_true = tf.constant([0.6, 0.0, 0.7])
         y_pred = tf.constant([0.7, 0.0, 0.8])
