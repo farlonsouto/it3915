@@ -167,7 +167,7 @@ class BERT4NILM(Model):
 
         # Multiply by max power and clamp
         pred_appl_power = tf.clip_by_value(pred_appl_power * self.max_power, 0, self.max_power)
-        print("Predicted appliance power: ", pred_appl_power)
+        
         return pred_appl_power
 
     def train_step(self, data):
