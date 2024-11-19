@@ -1,6 +1,7 @@
 logs/validation/
 logs/train/
 slurm/*.log
+sluem/wandb
 datasets/*.h5
 !logs/.gitkeep
 .idea
