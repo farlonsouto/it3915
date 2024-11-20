@@ -85,16 +85,16 @@ class LossFunction(tf.keras.losses.Loss):
         l1_loss = l1_loss * self.lambda_val  # For some appliances it is meaningful. For the kettle lambdas just 1.
 
         # The complete original formula:
-        # total_loss = mse_loss + kl_diverg + log_sigmoid_loss + self.lambda_val * l1_loss
+        total_loss = mse_loss + kl_diverg + log_sigmoid_loss + self.lambda_val * l1_loss
 
-        norm_mse = (mse_loss / 1 + mse_loss)
-        norm_l1_loss = (l1_loss / 1 + l1_loss)
-        norm_kl_diverg = (kl_diverg / 1 + kl_diverg)
-        norm_log_sigm_loss = (log_sigmoid_loss / 1 + log_sigmoid_loss)
+        # norm_mse = (mse_loss / 1 + mse_loss)
+        # norm_l1_loss = (l1_loss / 1 + l1_loss)
+        # norm_kl_diverg = (kl_diverg / 1 + kl_diverg)
+        # norm_log_sigm_loss = (log_sigmoid_loss / 1 + log_sigmoid_loss)
 
         # The suggested variation where the terms were normalized and the term regarding the appliance state domains
         # the function
-        total_loss = norm_mse + norm_l1_loss + norm_kl_diverg + norm_log_sigm_loss
+        # total_loss = norm_mse + norm_l1_loss + norm_kl_diverg + norm_log_sigm_loss
 
         return total_loss
 
