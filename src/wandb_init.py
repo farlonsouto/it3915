@@ -16,33 +16,50 @@
 
 
 config = {
+
+    # Appliance and Dataset specific
     "appliance": "kettle",  # The selected appliance must be the same for training and testing !!
     "on_threshold": 2000,
     "max_power": 3100,
     "min_on_duration": 12,  # in seconds
     "min_off_duration": 0,  # in seconds
+
+    # Training
+    "batch_size": 64,
+    "epochs": 10,
+    "learning_rate": 1e-4,
+    "optimizer": "adam",
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
-    "window_size": 128,  # for UK Dale, 10 time steps mean 1 minute
-    "batch_size": 128,
+    "tau": 1.0,
+    "lambda_val": 1,  # inside the loss function
+
+    # Input
+    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
+    "masking_portion": 0.25,
+
+    # 1D Convolution layer
+    "conv_kernel_size": 5,
+    "conv_strides": 1, # to be fixed in 1
+    "conv_padding": 2,
+    "conv_activation": "relu",  # preferably ReLU
+
+    # Transformer
     "hidden_size": 256,
     "num_heads": 2,
     "n_layers": 2,
-    "dropout": 0.2,
-    "learning_rate": 1e-4,
-    "epochs": 10,
-    "optimizer": "adam",
-    "tau": 1.0,
-    "lambda_val": 1,  # inside the loss function
-    "masking_portion": 0.25,
-    "output_size": 1,
-    "conv_kernel_size": 3,
-    "deconv_kernel_size": 4,
-    "conv_activation": "gelu",
-    "dense_activation": "relu",
-    "ff_dim": 256,  # Feed-forward network dimension
+    "dropout": 0.1,
     "layer_norm_epsilon": 1e-2,
-    "kernel_initializer": "glorot_uniform",
-    "bias_initializer": "zeros",
-    "kernel_regularizer": None,  # Options: None, 'l1', 'l2', 'l1_l2'
-    "bias_regularizer": None,  # Options: None, 'l1', 'l2', 'l1_l2'
+    "dense_activation": "gelu",  # Originally, gelu
+
+    # Deconvolution layer
+    "deconv_kernel_size": 4,
+    "deconv_strides": 2,
+    "deconv_padding": 1,
+    "deconv_activation": "relu",
+
+    # Feed-forward network dimension
+    "ff_dim": 256,
+
+    # Dimension (number of features) in the output layer
+    "output_size": 1,
 }
