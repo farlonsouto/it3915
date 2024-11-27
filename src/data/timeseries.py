@@ -19,8 +19,6 @@ class TimeSeries:
         self.test_buildings = test_buildings
         self.dataset = dataset
         self.wandb_config = wandb_config
-        self.window_size = wandb_config.window_size
-        self.batch_size = wandb_config.batch_size
         self.appliance = wandb_config.appliance
         self.mean_power = None
         self.std_power = None
@@ -38,6 +36,7 @@ class TimeSeries:
             mains_data_frame = train_mains.load()
 
             for train_mains_df in mains_data_frame:
+                # TODO: Is it OK to always use power apparent since building 3 has no power active recorded?
                 mains_power = train_mains_df[('power', 'apparent')]
                 all_train_mains_power.append(mains_power)
 

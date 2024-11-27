@@ -1,10 +1,13 @@
 from nilmtk import DataSet
-from nilmtk.utils import print_dict
 
 
 def inspect_dataset(file_path: str, target_appliances: list):
     # Load the dataset
     dataset = DataSet(file_path)
+
+    # Print the timeframe for each building
+    for building in dataset.buildings:
+        print(f"Building {building}: {dataset.buildings[building].metadata['timeframe']}")
 
     # Print the dataset metadata
     print(dataset.metadata)
@@ -51,7 +54,7 @@ def inspect_dataset(file_path: str, target_appliances: list):
 
 
 # Specify the path to the .h5 file
-file_path = "../datasets/AMPds2.h5"  # "../datasets/ukdale.h5"  # Change this to your actual file path
+file_path = "../datasets/ukdale.h5"  # "../datasets/ukdale.h5"  # Change this to your actual file path
 
 # Inspect the dataset
 inspect_dataset(file_path, ["kettle", "fridge"])
