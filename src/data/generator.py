@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import numpy as np
 import pandas as pd
 from nilmtk import TimeFrame
@@ -38,12 +36,11 @@ class TimeSeriesDataGenerator(Sequence):
             start_date = max(appliance.get_timeframe().start, mains.get_timeframe().start)
             end_date = min(appliance.get_timeframe().end, mains.get_timeframe().end)
 
-            time_delta = pd.Timedelta(15, 'days')
             current_start = start_date
             current_end = start_date
             while current_end < end_date:
 
-                current_end = current_start + time_delta
+                current_end = current_start + self._time_delta()
                 if current_end >= end_date:
                     current_end = end_date
 
@@ -60,46 +57,17 @@ class TimeSeriesDataGenerator(Sequence):
                 mains_power = next(mains_generator)
                 appliance_power = next(appliance_generator)
 
-                # Yield aligned data for the current interval
-                yield self._process_data(mains_power, appliance_power)
+                # Performs the pre-processing of the data:
+                mains_power, appliance_power = self._process_data(mains_power, appliance_power)
 
-    def _count_samples(self):
-        """
-        Estimate total samples based on mains data length and window size.
-        """
-        total_samples = 0
-        for building in self.buildings:
-            meter_group = self.dataset.buildings[building].elec
-            timeframe = meter_group.mains().metadata['timeframe']
-            start_date = datetime.fromisoformat(timeframe['start'])
-            end_date = datetime.fromisoformat(timeframe['end'])
-            time_delta = end_date - start_date
-            total_samples += time_delta.total_seconds()
-        return total_samples // self.window_size
+                # Yield the data in the expected window size
+                for i in range(0, len(mains_power) - self.window_size + 1, self.window_size):
+                    yield mains_power[i:i + self.window_size], appliance_power[i:i + self.window_size]
 
-    def __len__(self):
-        """
-        Defines the number of batches in one epoch.
-        """
-        return self.total_samples // self.batch_size
-
-    def __getitem__(self, index):
-        """
-        Fetch a batch of data.
-        """
-        batch_X, batch_y = [], []
-        for _ in range(self.batch_size):
-            try:
-                X, y = next(self.data_generator)
-                batch_X.append(X)
-                batch_y.append(y)
-            except StopIteration:
-                self.data_generator = self._data_generator()  # Reset generator
-                X, y = next(self.data_generator)
-                batch_X.append(X)
-                batch_y.append(y)
-
-        return np.array(batch_X), np.array(batch_y)
+    def _time_delta(self):
+        """ The time delta in seconds. For convenience, a multiple of the self.window_size to enable dividing the
+        chunks in regular window sizes. Multiplied by 6 because the sampling rate is 6 seconds. """
+        return pd.Timedelta(self.window_size * 6 * 100, 'seconds')
 
     def _process_data(self, mains_power, appliance_power):
         """
@@ -168,3 +136,71 @@ class TimeSeriesDataGenerator(Sequence):
         appliance_status[off_durations < min_off_duration] = 1
 
         return appliance_status
+
+    def _count_samples(self):
+        """
+        Count the total number of samples across all buildings and chunks.
+        The count is adjusted for the window size.
+        """
+        total_samples = 0
+        for building in self.buildings:
+            elec = self.dataset.buildings[building].elec
+            mains = elec.mains()
+            appliance = elec[self.appliance]
+
+            # Overlapping timeframe
+            start_date = max(appliance.get_timeframe().start, mains.get_timeframe().start)
+            end_date = min(appliance.get_timeframe().end, mains.get_timeframe().end)
+
+            # Total samples for the overlapping timeframe
+            current_start = start_date
+            current_end = start_date
+
+            while current_end < end_date:
+                current_end = current_start + self._time_delta()
+                if current_end >= end_date:
+                    current_end = end_date
+
+                # Timeframe of interest
+                time_frame_of_interest = TimeFrame(start=current_start, end=current_end)
+
+                # Load appliance data to estimate samples
+                appliance_generator = appliance.power_series(
+                    ac_type="active", sections=[time_frame_of_interest]
+                )
+                try:
+                    appliance_chunk = next(appliance_generator)
+                    total_samples += len(appliance_chunk)
+                except StopIteration:
+                    continue
+
+                # Move to the next time chunk
+                current_start = current_end
+
+        # Adjust for the sliding window size
+        return total_samples // self.window_size
+
+    def __len__(self):
+        """
+        Calculate the number of batches in one epoch.
+        """
+        return self.total_samples // self.batch_size
+
+    def __getitem__(self, index):
+        """
+        Fetches a batch of data using the generator.
+        """
+        batch_X, batch_y = [], []
+        for _ in range(self.batch_size):
+            try:
+                X, y = next(self.data_generator)
+                batch_X.append(X)
+                batch_y.append(y)
+            except StopIteration:
+                # Reset the generator and fetch the next batch
+                self.data_generator = self._data_generator()
+                X, y = next(self.data_generator)
+                batch_X.append(X)
+                batch_y.append(y)
+
+        return np.array(batch_X), np.array(batch_y)
