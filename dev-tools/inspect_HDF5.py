@@ -32,6 +32,10 @@ def inspect_dataset(file_path: str, target_appliances: list):
                     appliance_name = "Unknown Appliance"
                     if meter.is_site_meter():
                         appliance_name = "Site Meter Aggregated Readings"
+                        print("Building {} - Available AC type: {}".format(building, meter.available_ac_types('power')))
+                        print("Building {} - Available Columns: {}".format(building, meter.available_columns()))
+                        print("Building {} - Meter model: {}".format(building, meter.device['model']))
+                        print("Building {} - Meter measurements: {}".format(building, meter.device['measurements']))
                     elif len(meter.appliances) > 0:
                         appliance_name = meter.appliances[0].label()
 
