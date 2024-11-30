@@ -25,8 +25,8 @@ config = {
     "min_off_duration": 0,  # in seconds
 
     # Training
-    "batch_size": 64,
-    "epochs": 10,
+    "batch_size": 32,
+    "epochs": 25,
     "learning_rate": 1e-4,
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
@@ -39,7 +39,7 @@ config = {
 
     # 1D Convolution layer
     "conv_kernel_size": 5,
-    "conv_strides": 1, # to be fixed in 1
+    "conv_strides": 1,  # to be fixed in 1
     "conv_padding": 2,
     "conv_activation": "relu",  # preferably ReLU
 
