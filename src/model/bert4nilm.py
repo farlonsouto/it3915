@@ -71,13 +71,13 @@ class BERT4NILM(Model):
         )
 
         self.output_layer1 = layers.Dense(
-            self.hyper_param.hidden_size,
-            activation='tanh',
+            128,  # So to match the article's implementation of reference
+            activation='linear',
         )
 
         self.output_layer2 = layers.Dense(
             1,
-            activation='sigmoid',  # To ensure output is between 0 and 1
+            activation='linear',
         )
 
     @staticmethod
@@ -131,6 +131,7 @@ class BERT4NILM(Model):
 
         x = self.deconv(x)
         x = self.output_layer1(x)
+        x = tf.math.tanh(x)  # Tanh activation - This is critical: aIt is NOT the activation function of a layer
         pred_appl_power = self.output_layer2(x)
 
         # Multiply by max power and clamp
