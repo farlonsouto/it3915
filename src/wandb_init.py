@@ -34,7 +34,7 @@ config = {
     "lambda_val": 1,  # inside the loss function
 
     # Input
-    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 256,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.25,
 
     # 1D Convolution layer

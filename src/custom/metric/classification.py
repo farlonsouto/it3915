@@ -6,13 +6,16 @@ class F1Score(tf.keras.metrics.Metric):
         super(F1Score, self).__init__(name=name, **kwargs)
         self.on_threshold = on_threshold
 
-        # Counters for cumulative TP, FP, FN
+        # Initialize cumulative counters for TP, FP, FN
         self.true_positives = self.add_weight(name='tp', initializer='zeros')
         self.false_positives = self.add_weight(name='fp', initializer='zeros')
         self.false_negatives = self.add_weight(name='fn', initializer='zeros')
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        # Threshold to binarize y_true and y_pred
+        """
+        Update state variables for TP, FP, FN based on the current batch.
+        """
+        # Binarize predictions and labels based on the threshold
         y_true_binary = tf.cast(y_true >= self.on_threshold, tf.float32)
         y_pred_binary = tf.cast(y_pred >= self.on_threshold, tf.float32)
 
@@ -21,13 +24,16 @@ class F1Score(tf.keras.metrics.Metric):
         fp = tf.reduce_sum((1 - y_true_binary) * y_pred_binary)
         fn = tf.reduce_sum(y_true_binary * (1 - y_pred_binary))
 
-        # Update state variables
+        # Update the cumulative counters
         self.true_positives.assign_add(tp)
         self.false_positives.assign_add(fp)
         self.false_negatives.assign_add(fn)
 
     def result(self):
-        # Precision and recall from cumulative TP, FP, FN
+        """
+        Calculate the F1 score based on cumulative TP, FP, FN.
+        """
+        # Calculate precision and recall
         precision = self.true_positives / (self.true_positives + self.false_positives + tf.keras.backend.epsilon())
         recall = self.true_positives / (self.true_positives + self.false_negatives + tf.keras.backend.epsilon())
 
@@ -35,23 +41,13 @@ class F1Score(tf.keras.metrics.Metric):
         f1 = 2 * (precision * recall) / (precision + recall + tf.keras.backend.epsilon())
         return f1
 
-    def reset_states(self):
-        # Reset cumulative counters
+    def reset_state(self):
+        """
+        Reset all state variables to zero.
+        """
         self.true_positives.assign(0.0)
         self.false_positives.assign(0.0)
         self.false_negatives.assign(0.0)
-
-    @staticmethod
-    def recall(y_true, y_pred):
-        """
-        Calculate recall using integers: TP / (TP + FN)
-        """
-        true_positives = tf.reduce_sum(tf.cast((y_true == 10) & (y_pred == 10), tf.float32))
-        # TP + FN is actually the set of all the actual TP
-        actual_positives = tf.reduce_sum(tf.cast(y_true == 10, tf.float32))
-
-        recall = true_positives / (actual_positives + tf.keras.backend.epsilon())
-        return recall
 
 
 class Accuracy(tf.keras.metrics.Metric):

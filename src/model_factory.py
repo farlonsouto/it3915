@@ -35,7 +35,6 @@ def create_model(wandb_config):
     model.build((None, wandb_config.window_size, 1))
 
     # Use bert4nilm_loss from bert_loss.py, and pass any required arguments from wandb_config
-    # Compile the model
     model.compile(
         optimizer=optimizer,
         loss=loss_fn,

@@ -134,9 +134,9 @@ class BERT4NILM(Model):
         pred_appl_power = self.output_layer2(x)
 
         # Multiply by max power and clamp
-        pred_appl_power = (
-            tf.clip_by_value(pred_appl_power * self.hyper_param.max_power, 1.0, self.hyper_param.max_power))
-
+        # Apply upper limit of max_power to all values
+        pred_appl_power = tf.clip_by_value(pred_appl_power * self.hyper_param.max_power, 1.0,
+                                           self.hyper_param.max_power)
         return pred_appl_power
 
     def train_step(self, data):

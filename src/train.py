@@ -28,10 +28,6 @@ dataset = DataSet(path_to_dataset)
 # time series handler for the UK Dale dataset
 timeSeries = TimeSeries(dataset, [1, 3, 4, 5], [2], wandb_config)
 
-# time series handler for the AMPds2dataset
-# timeSeries = TimeSeries(dataset, wandb_config.window_size, wandb_config.batch_size,
-#                        appliance=wandb_config.appliance)
-
 train_gen = timeSeries.getTrainingDataGenerator()
 X_batch, y_batch = train_gen[0]
 print("Sample statistics:")
