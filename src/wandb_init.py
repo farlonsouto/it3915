@@ -26,15 +26,15 @@ config = {
 
     # Training
     "batch_size": 128,
-    "epochs": 25,
-    "learning_rate": 1e-4,
+    "epochs": 2,
+    "learning_rate": 1e-5,
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
     "tau": 1.0,
     "lambda_val": 1,  # inside the loss function
 
     # Input
-    "window_size": 120,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 128,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.25,
 
     # 1D Convolution layer

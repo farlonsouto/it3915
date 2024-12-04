@@ -2,15 +2,15 @@ import tensorflow as tf
 
 
 class MeanRelativeError(tf.keras.metrics.Metric):
+    """
+    MRE = mean(|y_true - y_pred| / max(y_true, y_pred, 1e-9))
+    """
+
     def __init__(self, name="MRE", **kwargs):
         super(MeanRelativeError, self).__init__(name=name, **kwargs)
         self.mre = self.add_weight(name="MRE", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        """
-        Update the MRE state using the formula:
-        MRE = mean(|y_true - y_pred| / max(y_true, y_pred, 1e-9))
-        """
         # Compute the absolute error
         absolute_error = tf.abs(y_true - y_pred)
 
