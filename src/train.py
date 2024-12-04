@@ -26,7 +26,9 @@ print("Fetching data from the dataset located at ", path_to_dataset)
 dataset = DataSet(path_to_dataset)
 
 # time series handler for the UK Dale dataset
-timeSeries = TimeSeries(dataset, [1, 3, 4, 5], [2], wandb_config)
+training_buildings_kettle = [1, 3, 4, 5]
+training_buildings_fridge = [1, 5]
+timeSeries = TimeSeries(dataset, training_buildings_fridge, [2], wandb_config)
 
 train_gen = timeSeries.getTrainingDataGenerator()
 X_batch, y_batch = train_gen[0]

@@ -18,23 +18,23 @@
 config = {
 
     # Appliance and Dataset specific
-    "appliance": "kettle",  # The selected appliance must be the same for training and testing !!
-    "on_threshold": 2000,
-    "max_power": 3100,
-    "min_on_duration": 12,  # in seconds
-    "min_off_duration": 0,  # in seconds
+    "appliance": "fridge",  # The selected appliance must be the same for training and testing !!
+    "on_threshold": 50,
+    "max_power": 300,
+    "min_on_duration": 60,  # in seconds
+    "min_off_duration": 12,  # in seconds
 
     # Training
-    "batch_size": 128,
+    "batch_size": 32,
     "epochs": 2,
-    "learning_rate": 1e-5,
+    "learning_rate": 1e-4,
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
     "tau": 1.0,
     "lambda_val": 1,  # inside the loss function
 
     # Input
-    "window_size": 128,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.25,
 
     # 1D Convolution layer
@@ -58,7 +58,7 @@ config = {
     "deconv_activation": "relu",
 
     # Feed-forward network dimension
-    "ff_dim": 256,
+    "ff_dim": 197,
 
     # Dimension (number of features) in the output layer
     "output_size": 1,

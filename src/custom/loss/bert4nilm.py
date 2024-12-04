@@ -24,10 +24,6 @@ class LossFunction(tf.keras.losses.Loss):
             s_true (tensor): Ground truth appliance state labels {-1, 1}.
             s_pred (tensor): Predicted appliance state labels {-1, 1}.
         """
-        # Clamp ground truth and predicted values to avoid noise affecting state detection
-        max_power = self.max_power
-        y_true = tf.clip_by_value(y_true, 0, max_power)
-        y_pred = tf.clip_by_value(y_pred, 0, max_power)
 
         # Use the on-threshold to determine state; values above threshold considered "on"
         s_true = tf.cast(y_true > self.on_threshold, dtype=tf.float32) * 2 - 1
@@ -59,7 +55,6 @@ class LossFunction(tf.keras.losses.Loss):
         app_on_off_state_predicted = tf.reshape(app_on_off_state_predicted, tf.shape(app_on_off_state_grd_truth))
 
         tau = 1.0
-        # lambda_val = 0.1
 
         # Mean Squared Error (MSE)
         mse_loss = tf.reduce_mean(tf.square(app_pw_predicted - app_pw_grd_truth))
