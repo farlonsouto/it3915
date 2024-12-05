@@ -60,8 +60,11 @@ class TimeSeriesDataGenerator(Sequence):
                 # Performs the pre-processing of the data:
                 mains_power, appliance_power = self._process_data(mains_power, appliance_power)
 
+                stride = self.window_size
+                if self.is_training:
+                    stride = 1
                 # Yield the data in the expected window size
-                for i in range(0, len(mains_power) - self.window_size + 1, self.window_size):
+                for i in range(0, len(mains_power) - self.window_size + 1, stride):
                     yield mains_power[i:i + self.window_size], appliance_power[i:i + self.window_size]
 
     def _time_delta(self):
