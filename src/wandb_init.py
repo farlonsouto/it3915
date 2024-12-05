@@ -34,7 +34,7 @@ config = {
     "lambda_val": 1,  # inside the loss function
 
     # Input
-    "window_size": 300,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.25,
 
     # 1D Convolution layer
@@ -47,7 +47,7 @@ config = {
     "hidden_size": 256,
     "num_heads": 2,
     "n_layers": 2,
-    "dropout": 0.35,
+    "dropout": 0.4,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
 
