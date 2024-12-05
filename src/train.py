@@ -48,7 +48,7 @@ print("... The training data is available. Starting training ...")
 
 my_callbacks = [
     # WandbMetricsLogger(log_freq='batch'),
-    EarlyStopping(patience=5, monitor='val_loss', restore_best_weights=True),
+    EarlyStopping(patience=10, monitor='val_loss', restore_best_weights=True),
     ModelCheckpoint('../models/bert_model', save_best_only=True, monitor='loss', save_format="tf")
 ]
 

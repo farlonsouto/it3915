@@ -26,7 +26,7 @@ config = {
 
     # Training
     "batch_size": 32,
-    "epochs": 2,
+    "epochs": 10,
     "learning_rate": 1e-4,
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
@@ -47,7 +47,7 @@ config = {
     "hidden_size": 256,
     "num_heads": 2,
     "n_layers": 2,
-    "dropout": 0.4,
+    "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
 
