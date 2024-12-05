@@ -1,6 +1,6 @@
 import tensorflow as tf
 import wandb
-from tensorflow.keras import layers, Model, regularizers
+from keras import layers, Model
 
 tf.config.run_functions_eagerly(True)  # Forces eager execution in tf.function
 
@@ -46,7 +46,9 @@ class BERT4NILM(Model):
             kernel_size=self.hyper_param.conv_kernel_size,
             strides=self.hyper_param.conv_strides,
             activation=self.hyper_param.conv_activation,
-            padding="same"
+            padding="same",
+            kernel_initializer='truncated_normal',
+            kernel_regularizer="l1"
         )
 
         self.pool = LearnedL2NormPooling()
@@ -67,42 +69,42 @@ class BERT4NILM(Model):
             kernel_size=self.hyper_param.deconv_kernel_size,
             strides=self.hyper_param.deconv_strides,
             activation=self.hyper_param.deconv_activation,
-            padding="same"
+            padding="same",
+            kernel_initializer='truncated_normal',
+            kernel_regularizer="l1"
         )
 
         self.output_layer1 = layers.Dense(
             128,  # So to match the article's implementation of reference
             activation='linear',
+            kernel_initializer='truncated_normal',
+            kernel_regularizer="l1"
         )
 
         self.output_layer2 = layers.Dense(
             1,
             activation='linear',
+            kernel_initializer='truncated_normal',
+            kernel_regularizer="l2"
         )
-
-    @staticmethod
-    def get_regularizer(regularizer_config):
-        if regularizer_config == 'l1':
-            return regularizers.l1(l=0.01)
-        elif regularizer_config == 'l2':
-            return regularizers.l2(l=0.01)
-        elif regularizer_config == 'l1_l2':
-            return regularizers.l1_l2(l1=0.01, l2=0.01)
-        else:
-            return None
 
     def build_transformer_block(self):
         inputs = layers.Input(shape=(None, self.hyper_param.hidden_size))
         x = layers.LayerNormalization(epsilon=self.hyper_param.layer_norm_epsilon)(inputs)
         attn_output = layers.MultiHeadAttention(
+            kernel_initializer='truncated_normal',
+            kernel_regularizer="l2",
             num_heads=self.hyper_param.num_heads,
             key_dim=self.hyper_param.hidden_size // self.hyper_param.num_heads
         )(x, x)
         attn_output = self.dropout(attn_output)
         out1 = layers.Add()([inputs, attn_output])
         x = layers.LayerNormalization(epsilon=self.hyper_param.layer_norm_epsilon)(out1)
-        ff_output = layers.Dense(self.hyper_param.ff_dim, activation=self.hyper_param.dense_activation)(x)
-        ff_output = layers.Dense(self.hyper_param.hidden_size)(ff_output)
+        ff_output = layers.Dense(self.hyper_param.ff_dim, activation=self.hyper_param.dense_activation
+                                 , kernel_initializer='truncated_normal',
+                                 kernel_regularizer="l1")(x)
+        ff_output = layers.Dense(self.hyper_param.hidden_size, kernel_initializer='truncated_normal',
+                                 kernel_regularizer="l2")(ff_output)
         ff_output = self.dropout(ff_output)
         return Model(inputs, layers.Add()([out1, ff_output]))
 

@@ -29,8 +29,6 @@ class F1Score(tf.keras.metrics.Metric):
         precision = self.precision_metric.result()
         recall = self.recall_metric.result()
 
-        if precision + recall == 0:
-            print("------------------------------ WARNING: Precision + recall == 0. Using backend.epsilon()")
         # Calculate F1 score
         f1 = 2 * (precision * recall) / (precision + recall + tf.keras.backend.epsilon())
         return f1
