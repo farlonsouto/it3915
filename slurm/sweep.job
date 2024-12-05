@@ -34,7 +34,7 @@ wandb online
 
 # Run the WandB agent command for the sweep. The sweep is configured to trigger the training script.
 cd ../src || exit
-wandb agent farlonsouto-ntnu/nilm_bert_transformer/qoorxir1
+wandb agent farlonsouto-ntnu/nilm_bert_transformer/158dm27o
 
 # Display system information for debugging
 uname -a
