@@ -27,14 +27,14 @@ config = {
     # Training
     "batch_size": 32,
     "epochs": 10,
-    "learning_rate": 1e-4,
+    "learning_rate": 5e-5,
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
     "tau": 1.0,
     "lambda_val": 1,  # inside the loss function
 
     # Input
-    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 120,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.25,
 
     # 1D Convolution layer
@@ -44,10 +44,10 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 256,
+    "hidden_size": 213,
     "num_heads": 2,
     "n_layers": 2,
-    "dropout": 0.1,
+    "dropout": 0.2,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
 
@@ -58,7 +58,7 @@ config = {
     "deconv_activation": "relu",
 
     # Feed-forward network dimension
-    "ff_dim": 197,
+    "ff_dim": 307,
 
     # Dimension (number of features) in the output layer
     "output_size": 1,
