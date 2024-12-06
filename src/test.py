@@ -3,7 +3,6 @@ import tensorflow as tf
 import wandb
 from nilmtk import DataSet
 
-from custom.metric.classification import Accuracy, F1Score
 from custom.metric.regression import MeanRelativeError
 from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
@@ -40,10 +39,8 @@ except Exception as e:
     # Compile the model for evaluation
     bert_model.compile(
         metrics=[
-            Accuracy(wandb_config.on_threshold),
             tf.keras.metrics.MeanAbsoluteError(name='MAE'),
-            MeanRelativeError(name='MRE'),
-            F1Score(on_threshold=wandb_config.on_threshold)
+            MeanRelativeError(name='MRE')
         ]
     )
 
