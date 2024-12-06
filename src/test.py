@@ -78,7 +78,7 @@ for i in range(5):  # Print the first 5 samples
     print("----")
 
 # Plot the comparison
-plot_comparison(y_test, predictions)
+plot_comparison(test_gen, bert_model)
 
 # Print some statistics
 print("\nStatistics:")

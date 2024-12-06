@@ -3,7 +3,11 @@ import numpy as np
 
 
 # Plotting function
-def plot_comparison(y_true, y_pred, title='Energy Consumption: Predicted vs Ground Truth'):
+def plot_comparison(test_gen, bert_model, title='Energy Consumption: Predicted vs Ground Truth'):
+    # TODO: Plot the entire test data
+    X_test, y_true = next(iter(test_gen))  # Get the first batch of test data
+    y_pred = bert_model.predict(X_test)
+
     samples = y_true.shape[0] * y_true.shape[1]
     x = np.arange(samples)
 
