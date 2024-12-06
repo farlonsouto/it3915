@@ -1,7 +1,6 @@
 import tensorflow as tf
 
 from custom.loss.bert4nilm import LossFunction
-from custom.metric.classification import Accuracy, F1Score
 from custom.metric.regression import MeanRelativeError
 from model.bert4nilm import BERT4NILM
 
@@ -39,10 +38,8 @@ def create_model(wandb_config):
         optimizer=optimizer,
         loss=loss_fn,
         metrics=[
-            Accuracy(wandb_config.on_threshold),
             tf.keras.metrics.MeanAbsoluteError(name='MAE'),
             MeanRelativeError(name='MRE'),
-            F1Score(on_threshold=wandb_config.on_threshold)
         ]
     )
 

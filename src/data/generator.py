@@ -15,8 +15,6 @@ class TimeSeriesDataGenerator(Sequence):
         self.batch_size = wandb_config.batch_size
         self.max_power = wandb_config.max_power
         self.on_threshold = wandb_config.on_threshold
-        self.min_on_duration = wandb_config.min_on_duration
-        self.min_off_duration = wandb_config.min_off_duration
         self.is_training = is_training
         self.data_generator = self._data_generator()
         self.total_samples = self._count_samples()
@@ -51,7 +49,7 @@ class TimeSeriesDataGenerator(Sequence):
                     ac_type='active', sections=[time_frame_of_interest],
                 )
                 mains_generator = mains.power_series(
-                    ac_type='apparent', sections=[time_frame_of_interest],
+                    ac_type='active', sections=[time_frame_of_interest],
                 )
 
                 mains_power = next(mains_generator)
@@ -72,7 +70,7 @@ class TimeSeriesDataGenerator(Sequence):
         chunks in regular window sizes. Multiplied by 6 because the sampling rate is 6 seconds. """
         return pd.Timedelta(self.window_size * 6 * 100, 'seconds')
 
-    def _process_data(self, mains_power, appliance_power):
+    def _process_data(self, aggregated, appliance_power):
         """
         Processes mains and appliance power data, aligns them with tolerance, and applies transformations.
 
@@ -85,25 +83,15 @@ class TimeSeriesDataGenerator(Sequence):
         """
 
         # Sort indices to avoid performance warnings
-        mains_power = mains_power.sort_index()
+        aggregated = aggregated.sort_index()
         appliance_power = appliance_power.sort_index()
 
         # Remove any possible duplicated indices
-        mains_power = mains_power[~mains_power.index.duplicated(keep='first')]
+        aggregated = aggregated[~aggregated.index.duplicated(keep='first')]
         appliance_power = appliance_power[~appliance_power.index.duplicated(keep='first')]
 
         # Align the series
-        mains_power, appliance_power = mains_power.align(appliance_power, join='inner', method='pad', limit=1)
-
-        # Convert appliance power to binary states
-        appliance_status = appliance_power > self.on_threshold
-        appliance_status = self._apply_min_durations(
-            appliance_status, self.min_on_duration, self.min_off_duration
-        )
-        appliance_power = appliance_power * appliance_status
-
-        # restores the ones, which are the original values
-        appliance_power = appliance_power.replace(0.0, 1.0)
+        aggregated, appliance_power = aggregated.align(appliance_power, join='inner', method='pad', limit=1)
 
         # Mask for values to ignore
         mask = appliance_power == 1.0
@@ -111,34 +99,15 @@ class TimeSeriesDataGenerator(Sequence):
         appliance_power = appliance_power.where(mask,
                                                 appliance_power.clip(lower=self.on_threshold, upper=self.max_power))
 
-        # Normalize mains power
+        # I've decided to DO NOT NORMALIZE the aggregated power
         # mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
 
         # TODO: With reshaping, the timestamp is NOT one of the features. Should it be?
         # Convert to numpy arrays
-        mains_power = mains_power.values.reshape(-1, 1)
+        aggregated = aggregated.values.reshape(-1, 1)
         appliance_power = appliance_power.values.reshape(-1, 1)
 
-        return mains_power, appliance_power
-
-    def _apply_min_durations(self, appliance_status, min_on_duration, min_off_duration):
-        """
-        Apply minimum on/off durations to appliance status.
-        """
-        appliance_status = appliance_status.astype(int)
-        status_changes = appliance_status.diff().fillna(0)
-
-        # Enforce minimum on durations
-        on_groups = (status_changes == 1).cumsum() * appliance_status
-        on_durations = on_groups.groupby(on_groups).transform('count') * 6
-        appliance_status[on_durations < min_on_duration] = 0
-
-        # Enforce minimum off durations
-        off_groups = (status_changes == -1).cumsum() * (1 - appliance_status)
-        off_durations = off_groups.groupby(off_groups).transform('count') * 6
-        appliance_status[off_durations < min_off_duration] = 1
-
-        return appliance_status
+        return aggregated, appliance_power
 
     def _count_samples(self):
         """

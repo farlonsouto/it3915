@@ -1,5 +1,4 @@
 import tensorflow as tf
-import wandb
 from keras import layers, Model
 
 tf.config.run_functions_eagerly(True)  # Forces eager execution in tf.function
@@ -141,30 +140,4 @@ class BERT4NILM(Model):
         pred_appl_power = tf.clip_by_value(pred_appl_power * self.hyper_param.max_power, 1.0,
                                            self.hyper_param.max_power)
 
-        #  pred_appl_power = tf.where(pred_appl_power < self.hyper_param.on_threshold,
-        #                              tf.fill(tf.shape(pred_appl_power), 1.0),
-        #                            pred_appl_power)
-
-        #  pred_appl_power = tf.where(pred_appl_power > self.hyper_param.on_threshold / 2.0,
-        #                           tf.fill(tf.shape(pred_appl_power), self.hyper_param.on_threshold * 1.75),
-        #                           pred_appl_power)
         return pred_appl_power
-
-    def train_step(self, data):
-        inputs, targets = data
-
-        with tf.GradientTape() as tape:
-            pred_appl_power = self(inputs, training=True)
-            loss = self.compiled_loss(targets, pred_appl_power)
-
-        gradients = tape.gradient(loss, self.trainable_variables)
-        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-
-        self.compiled_metrics.update_state(targets, pred_appl_power)
-        metrics = {m.name: m.result().numpy() for m in self.metrics}
-        metrics["loss"] = loss.numpy()
-
-        if int(self.optimizer.iterations) % self.hyper_param.batch_size == 0:
-            wandb.log(metrics)
-
-        return metrics

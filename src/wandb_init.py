@@ -21,21 +21,19 @@ config = {
     "appliance": "fridge",  # The selected appliance must be the same for training and testing !!
     "on_threshold": 50,
     "max_power": 300,
-    "min_on_duration": 60,  # in seconds
-    "min_off_duration": 12,  # in seconds
 
     # Training
-    "batch_size": 64,
+    "batch_size": 128,
     "epochs": 10,
     "learning_rate": 1e-4,
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
     "tau": 1.0,
-    "lambda_val": 1e-6,  # inside the loss function
+    "lambda_val": 1e-4,  # inside the loss function
 
     # Input
-    "window_size": 64,  # for UK Dale, 10 time steps mean 1 minute
-    "masking_portion": 0.1,
+    "window_size": 100,  # for UK Dale, 10 time steps mean 1 minute
+    "masking_portion": 0.2,
 
     # 1D Convolution layer
     "conv_kernel_size": 5,
@@ -45,9 +43,9 @@ config = {
 
     # Transformer
     "hidden_size": 128,
-    "num_heads": 1,
-    "n_layers": 2,
-    "dropout": 0.4,
+    "num_heads": 2,
+    "n_layers": 1,
+    "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
 
@@ -58,7 +56,7 @@ config = {
     "deconv_activation": "relu",
 
     # Feed-forward network dimension
-    "ff_dim": 97,
+    "ff_dim": 128,
 
     # Dimension (number of features) in the output layer
     "output_size": 1,
