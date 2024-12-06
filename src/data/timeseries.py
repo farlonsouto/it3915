@@ -37,7 +37,7 @@ class TimeSeries:
 
             for train_mains_df in mains_data_frame:
                 # TODO: Is it OK to always use power apparent since building 3 has no power active recorded?
-                mains_power = train_mains_df[('power', 'apparent')]
+                mains_power = train_mains_df[('power', 'active')]
                 all_train_mains_power.append(mains_power)
 
         if all_train_mains_power:

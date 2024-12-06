@@ -112,7 +112,7 @@ class TimeSeriesDataGenerator(Sequence):
                                                 appliance_power.clip(lower=self.on_threshold, upper=self.max_power))
 
         # Normalize mains power
-        mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
+        # mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
 
         # TODO: With reshaping, the timestamp is NOT one of the features. Should it be?
         # Convert to numpy arrays

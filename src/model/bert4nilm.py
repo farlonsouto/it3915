@@ -48,7 +48,7 @@ class BERT4NILM(Model):
             activation=self.hyper_param.conv_activation,
             padding="same",
             kernel_initializer='truncated_normal',
-            kernel_regularizer="l1"
+            kernel_regularizer="l2"
         )
 
         self.pool = LearnedL2NormPooling()
@@ -71,14 +71,14 @@ class BERT4NILM(Model):
             activation=self.hyper_param.deconv_activation,
             padding="same",
             kernel_initializer='truncated_normal',
-            kernel_regularizer="l1"
+            kernel_regularizer="l2"
         )
 
         self.output_layer1 = layers.Dense(
             128,  # So to match the article's implementation of reference
             activation='linear',
             kernel_initializer='truncated_normal',
-            kernel_regularizer="l1"
+            kernel_regularizer="l2"
         )
 
         self.output_layer2 = layers.Dense(
@@ -102,7 +102,7 @@ class BERT4NILM(Model):
         x = layers.LayerNormalization(epsilon=self.hyper_param.layer_norm_epsilon)(out1)
         ff_output = layers.Dense(self.hyper_param.ff_dim, activation=self.hyper_param.dense_activation
                                  , kernel_initializer='truncated_normal',
-                                 kernel_regularizer="l1")(x)
+                                 kernel_regularizer="l2")(x)
         ff_output = layers.Dense(self.hyper_param.hidden_size, kernel_initializer='truncated_normal',
                                  kernel_regularizer="l2")(ff_output)
         ff_output = self.dropout(ff_output)
@@ -140,6 +140,14 @@ class BERT4NILM(Model):
         # Apply upper limit of max_power to all values
         pred_appl_power = tf.clip_by_value(pred_appl_power * self.hyper_param.max_power, 1.0,
                                            self.hyper_param.max_power)
+
+        #  pred_appl_power = tf.where(pred_appl_power < self.hyper_param.on_threshold,
+        #                              tf.fill(tf.shape(pred_appl_power), 1.0),
+        #                            pred_appl_power)
+
+        #  pred_appl_power = tf.where(pred_appl_power > self.hyper_param.on_threshold / 2.0,
+        #                           tf.fill(tf.shape(pred_appl_power), self.hyper_param.on_threshold * 1.75),
+        #                           pred_appl_power)
         return pred_appl_power
 
     def train_step(self, data):
