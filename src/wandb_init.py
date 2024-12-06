@@ -34,8 +34,8 @@ config = {
     "lambda_val": 1e-6,  # inside the loss function
 
     # Input
-    "window_size": 120,  # for UK Dale, 10 time steps mean 1 minute
-    "masking_portion": 0.2,
+    "window_size": 64,  # for UK Dale, 10 time steps mean 1 minute
+    "masking_portion": 0.1,
 
     # 1D Convolution layer
     "conv_kernel_size": 5,
@@ -44,10 +44,10 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 333,
-    "num_heads": 3,
+    "hidden_size": 128,
+    "num_heads": 1,
     "n_layers": 2,
-    "dropout": 0.1,
+    "dropout": 0.4,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
 
@@ -58,7 +58,7 @@ config = {
     "deconv_activation": "relu",
 
     # Feed-forward network dimension
-    "ff_dim": 157,
+    "ff_dim": 97,
 
     # Dimension (number of features) in the output layer
     "output_size": 1,
