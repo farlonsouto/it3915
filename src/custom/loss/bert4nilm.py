@@ -9,7 +9,6 @@ class LossFunction(tf.keras.losses.Loss):
     def __init__(self, wandb_config, reduction=losses_utils.ReductionV2.AUTO, name="bert4nilm_loss"):
         super().__init__(reduction, name)
         self.max_power = wandb_config.max_power
-        self.on_threshold = wandb_config.on_threshold
         self.lambda_val = wandb_config.lambda_val
 
     def call(self, app_pw_grd_truth, app_pw_predicted):
