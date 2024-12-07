@@ -1,7 +1,8 @@
 import tensorflow as tf
 from keras import layers, Model
 
-tf.config.run_functions_eagerly(True)  # Forces eager execution in tf.function
+
+# tf.config.run_functions_eagerly(True)  # Forces eager execution in tf.function
 
 
 class LearnedL2NormPooling(layers.Layer):
