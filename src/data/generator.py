@@ -15,6 +15,7 @@ class TimeSeriesDataGenerator(Sequence):
         self.batch_size = wandb_config.batch_size
         self.max_power = wandb_config.max_power
         self.on_threshold = wandb_config.on_threshold
+        self.window_stride = wandb_config.window_stride
         self.is_training = is_training
         self.data_generator = self._data_generator()
         self.total_samples = self._count_samples()
@@ -27,12 +28,12 @@ class TimeSeriesDataGenerator(Sequence):
 
         for building in self.buildings:
             elec = self.dataset.buildings[building].elec
-            mains = elec.mains()
+            aggregated = elec.mains()
             appliance = elec[self.appliance]
 
             # Explicitly considering  only the overlapping period
-            start_date = max(appliance.get_timeframe().start, mains.get_timeframe().start)
-            end_date = min(appliance.get_timeframe().end, mains.get_timeframe().end)
+            start_date = max(appliance.get_timeframe().start, aggregated.get_timeframe().start)
+            end_date = min(appliance.get_timeframe().end, aggregated.get_timeframe().end)
 
             current_start = start_date
             current_end = start_date
@@ -46,23 +47,27 @@ class TimeSeriesDataGenerator(Sequence):
 
                 # Load data for the current interval
 
-                mains_generator = mains.power_series(
-                    ac_type='apparent', sections=[time_frame_of_interest],
+                ac_type_aggregated = 'apparent'
+                if 'active' in aggregated.available_ac_types('power'):
+                    ac_type_aggregated = 'active'  # gives priority to the active power
+
+                aggregated_generator = aggregated.power_series(
+                    ac_type=ac_type_aggregated, sections=[time_frame_of_interest],
                 )
 
                 appliance_generator = appliance.power_series(
                     ac_type='active', sections=[time_frame_of_interest],
                 )
 
-                mains_power = next(mains_generator)
+                mains_power = next(aggregated_generator)
                 appliance_power = next(appliance_generator)
 
                 # Performs the pre-processing of the data:
-                mains_power, appliance_power = self._process_data(mains_power, appliance_power)
+                mains_power, appliance_power = self._process_data(mains_power, appliance_power, ac_type_aggregated)
 
                 stride = self.window_size
                 if self.is_training:
-                    stride = 1
+                    stride = self.window_stride
                 # Yield the data in the expected window size
                 for i in range(0, len(mains_power) - self.window_size + 1, stride):
                     yield mains_power[i:i + self.window_size], appliance_power[i:i + self.window_size]
@@ -73,7 +78,7 @@ class TimeSeriesDataGenerator(Sequence):
          """
         return pd.Timedelta(self.window_size * 6 * 100, 'seconds')
 
-    def _process_data(self, aggregated, appliance_power):
+    def _process_data(self, aggregated, appliance_power, ac_type_aggregated):
         """
         Processes mains and appliance power data, aligns them with tolerance, and applies transformations.
 
@@ -105,11 +110,15 @@ class TimeSeriesDataGenerator(Sequence):
         # I've decided to DO NOT NORMALIZE the aggregated power
         # mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
 
-        # Convert to numpy arrays
-        # aggregated = aggregated.values.reshape(-1, 1)
-
         aggregated = self.augument_with_tempoeral_features(aggregated)
 
+        # Now that aggregated is  DataFrame, I can augment it with active vs. apparent info as well
+        if ac_type_aggregated == 'active':
+            aggregated['ac_type'] = 1
+        else:
+            aggregated['ac_type'] = 0
+
+        # With this we drop the DatetimeIndex from the appliance power and convert it to a numpy array
         appliance_power = appliance_power.values.reshape(-1, 1)
 
         return aggregated, appliance_power
@@ -131,10 +140,10 @@ class TimeSeriesDataGenerator(Sequence):
 
         # Extract temporal features from the DatetimeIndex
         df = serie.to_frame(name="value")  # Convert Series to DataFrame with a column name
-        df["year"] = serie.index.year
-        df["month"] = serie.index.month
-        df["day"] = serie.index.day
-        df["day_of_week"] = serie.index.dayofweek
+        # df["year"] = serie.index.year
+        # df["month"] = serie.index.month
+        # df["day"] = serie.index.day
+        # df["day_of_week"] = serie.index.dayofweek
         df["hour"] = serie.index.hour
         df["minute"] = serie.index.minute
         df["second"] = serie.index.second
