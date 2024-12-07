@@ -31,7 +31,7 @@ def create_model(wandb_config):
     # `None` stands for a flexible, variable batch size.
     # 'window_size` is the number of time steps in the sliding window
     # `1` corresponds the number of features (for now, only one: the power consumption)
-    model.build((None, wandb_config.window_size, 1))
+    model.build((None, wandb_config.window_size, 8))
 
     # Use bert4nilm_loss from bert_loss.py, and pass any required arguments from wandb_config
     model.compile(

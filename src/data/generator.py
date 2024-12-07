@@ -45,10 +45,12 @@ class TimeSeriesDataGenerator(Sequence):
                 time_frame_of_interest = TimeFrame(start=current_start, end=current_end)
 
                 # Load data for the current interval
-                appliance_generator = appliance.power_series(
-                    ac_type='active', sections=[time_frame_of_interest],
-                )
+
                 mains_generator = mains.power_series(
+                    ac_type='apparent', sections=[time_frame_of_interest],
+                )
+
+                appliance_generator = appliance.power_series(
                     ac_type='active', sections=[time_frame_of_interest],
                 )
 
@@ -67,7 +69,8 @@ class TimeSeriesDataGenerator(Sequence):
 
     def _time_delta(self):
         """ The time delta in seconds. For convenience, a multiple of the self.window_size to enable dividing the
-        chunks in regular window sizes. Multiplied by 6 because the sampling rate is 6 seconds. """
+        chunks in regular window sizes. Multiplied by 6 because the sampling rate is 6 seconds.
+         """
         return pd.Timedelta(self.window_size * 6 * 100, 'seconds')
 
     def _process_data(self, aggregated, appliance_power):
@@ -102,12 +105,44 @@ class TimeSeriesDataGenerator(Sequence):
         # I've decided to DO NOT NORMALIZE the aggregated power
         # mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
 
-        # TODO: With reshaping, the timestamp is NOT one of the features. Should it be?
         # Convert to numpy arrays
-        aggregated = aggregated.values.reshape(-1, 1)
+        # aggregated = aggregated.values.reshape(-1, 1)
+
+        aggregated = self.augument_with_tempoeral_features(aggregated)
+
         appliance_power = appliance_power.values.reshape(-1, 1)
 
         return aggregated, appliance_power
+
+    def augument_with_tempoeral_features(self, serie: pd.Series) -> pd.DataFrame:
+        """
+        Uses the datetime index to expand the Series with the dimensions (columns):
+        year, month, day, hour, minute, second, day of the week. These become new columns
+        alongside the original values, and the Index itself is preserved.
+
+        Parameters:
+        - serie: pd.Series - Input Pandas Series with a DatetimeIndex
+
+        Returns:
+        - pd.DataFrame: The original Series converted to a DataFrame with additional temporal columns.
+        """
+        if not isinstance(serie.index, pd.DatetimeIndex):
+            raise ValueError("The input Series must have a DatetimeIndex.")
+
+        # Extract temporal features from the DatetimeIndex
+        df = serie.to_frame(name="value")  # Convert Series to DataFrame with a column name
+        df["year"] = serie.index.year
+        df["month"] = serie.index.month
+        df["day"] = serie.index.day
+        df["day_of_week"] = serie.index.dayofweek
+        df["hour"] = serie.index.hour
+        df["minute"] = serie.index.minute
+        df["second"] = serie.index.second
+
+        # Removes the original timestamp index
+        df.reset_index(drop=True, inplace=True)
+
+        return df
 
     def _count_samples(self):
         """
