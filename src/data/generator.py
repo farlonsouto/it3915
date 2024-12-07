@@ -29,7 +29,13 @@ class TimeSeriesDataGenerator(Sequence):
         for building in self.buildings:
             elec = self.dataset.buildings[building].elec
             aggregated = elec.mains()
-            appliance = elec[self.appliance]
+
+            appliance = None
+            try:
+                appliance = elec[self.appliance]
+            except KeyError:
+                print(f"Appliance {self.appliance} not available in the Building {building}")
+                continue
 
             # Explicitly considering  only the overlapping period
             start_date = max(appliance.get_timeframe().start, aggregated.get_timeframe().start)
@@ -162,7 +168,11 @@ class TimeSeriesDataGenerator(Sequence):
         for building in self.buildings:
             elec = self.dataset.buildings[building].elec
             mains = elec.mains()
-            appliance = elec[self.appliance]
+            appliance = None
+            try:
+                appliance = elec[self.appliance]
+            except KeyError:
+                continue
 
             # Overlapping timeframe
             start_date = max(appliance.get_timeframe().start, mains.get_timeframe().start)

@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import wandb
 from nilmtk import DataSet
@@ -5,15 +7,23 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
+from hyper_params import for_appliance
 from model_factory import create_model
-from wandb_init import config
+
+appliance = 'fridge'
+if len(sys.argv) > 1:
+    appliance = sys.argv[1]
+    if appliance in ['kettle', 'fridge', 'washer', 'microwave', 'dishwasher']:
+        pass
+    else:
+        print(f"Invalid appliance name: {appliance}. Using fridge as default.")
 
 # Set GPU memory growth
 set_gpu_memory_growth()
 
 wandb.init(
     project="nilm_bert_transformer",
-    config=config
+    config=for_appliance(appliance)
 )
 
 # Retrieve the configuration from WandB
@@ -26,9 +36,8 @@ print("Fetching data from the dataset located at ", path_to_dataset)
 dataset = DataSet(path_to_dataset)
 
 # time series handler for the UK Dale dataset
-training_buildings_kettle = [1, 3, 4, 5]
-training_buildings_fridge = [1, 5]
-timeSeries = TimeSeries(dataset, training_buildings_kettle, [2], wandb_config)
+training_buildings = [1, 3, 4, 5]
+timeSeries = TimeSeries(dataset, training_buildings, [2], wandb_config)
 
 train_gen = timeSeries.getTrainingDataGenerator()
 X_batch, y_batch = train_gen[0]

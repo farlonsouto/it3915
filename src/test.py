@@ -8,7 +8,7 @@ from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from model.bert4nilm import BERT4NILM
 from plotter import plot_comparison
-from wandb_init import config
+from hyper_params import config
 
 # Set GPU memory growth
 set_gpu_memory_growth()

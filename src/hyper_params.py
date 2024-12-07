@@ -61,3 +61,29 @@ config = {
     # Dimension (number of features) in the output layer
     "output_size": 1,
 }
+
+
+def for_appliance(appliance) -> dict:
+    config["appliance"] = appliance
+    if appliance == "kettle":
+        config["on_threshold"] = 2000
+        config["max_power"] = 3200
+        config["lambda_val"] = 1.0
+    elif appliance == "fridge":
+        config["on_threshold"] = 50
+        config["max_power"] = 400
+        config["lambda_val"] = 1e-6
+    elif appliance == "washer":
+        config["on_threshold"] = 20
+        config["max_power"] = 2500
+        config["lambda_val"] = 1e-2
+    elif appliance == "microwave":
+        config["on_threshold"] = 200
+        config["max_power"] = 3000
+        config["lambda_val"] = 1.0
+    elif appliance == "dishwasher":
+        config["on_threshold"] = 10
+        config["max_power"] = 2500
+        config["lambda_val"] = 1.0
+
+    return config
