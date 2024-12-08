@@ -1,29 +1,20 @@
-import sys
-
 import numpy as np
 import wandb
 from nilmtk import DataSet
 from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 
+from cmd_line_input import get_appliance_arg
 from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_appliance
 from model_factory import create_model
-
-appliance = 'fridge'
-if len(sys.argv) > 1:
-    appliance = sys.argv[1]
-    if appliance in ['kettle', 'fridge', 'washer', 'microwave', 'dishwasher']:
-        pass
-    else:
-        print(f"Invalid appliance name: {appliance}. Using fridge as default.")
 
 # Set GPU memory growth
 set_gpu_memory_growth()
 
 wandb.init(
     project="nilm_bert_transformer",
-    config=for_appliance(appliance)
+    config=for_appliance(get_appliance_arg())
 )
 
 # Retrieve the configuration from WandB

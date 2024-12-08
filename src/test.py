@@ -3,19 +3,20 @@ import tensorflow as tf
 import wandb
 from nilmtk import DataSet
 
+from cmd_line_input import get_appliance_arg
 from custom.metric.regression import MeanRelativeError
 from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
+from hyper_params import for_appliance
 from model.bert4nilm import BERT4NILM
 from plotter import plot_comparison
-from hyper_params import config
 
 # Set GPU memory growth
 set_gpu_memory_growth()
 
 wandb.init(
     project="nilm_bert_transformer",
-    config=config
+    config=for_appliance(get_appliance_arg())
 )
 
 # Retrieve the configuration from WandB
@@ -30,7 +31,7 @@ except Exception as e:
     bert_model = BERT4NILM(wandb_config)
 
     # Build the model with input shape
-    bert_model.build((None, wandb_config.window_size, 1))
+    bert_model.build((None, wandb_config.window_size, 5))
 
     # Load the weights from the checkpoint files
     bert_model.load_weights('../models/bert_model')
