@@ -59,6 +59,7 @@ for building_number in my_dataset.buildings.keys():
     # Plot specified appliances if available
     for appliance in appliances_to_plot:
         if appliance in available_appliances:
-            plot_appliance(my_dataset, building_number, appliance)
+            pass
+    # plot_appliance(my_dataset, building_number, appliance)
 
 print("Finished processing the dataset")
