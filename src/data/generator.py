@@ -5,6 +5,19 @@ from tensorflow.keras.utils import Sequence
 
 
 class TimeSeriesDataGenerator(Sequence):
+    """ Generates
+        a) An X (aggregated reading, input) with 5 (five) channels:
+            1. Mains power
+            2. Hour of the day (0-23)
+            3. Minute (0 - 59)
+            4. Second (0 - 59)
+            5. AC type (1 - active, 0 - apparent)
+        b) An y (appliance reading, ground truth) with 1 channel:
+            1. Appliance power (always wit the AC type active)
+        At the end, yields multiple pairs (x, y) where x and y are aligned according to their original timestamps
+        and have shapes (window size, 5) and (window size, 1) respectively.
+    """
+
     def __init__(self, dataset, buildings, appliance, mean_power, std_power, wandb_config, is_training=True):
         self.dataset = dataset
         self.buildings = buildings
@@ -54,8 +67,9 @@ class TimeSeriesDataGenerator(Sequence):
                 # Load data for the current interval
 
                 ac_type_aggregated = 'apparent'
+                # UK Dale's buildings always presents apparent, but this impl gives priority to the active power
                 if 'active' in aggregated.available_ac_types('power'):
-                    ac_type_aggregated = 'active'  # gives priority to the active power
+                    ac_type_aggregated = 'active'
 
                 aggregated_generator = aggregated.power_series(
                     ac_type=ac_type_aggregated, sections=[time_frame_of_interest],
@@ -116,6 +130,7 @@ class TimeSeriesDataGenerator(Sequence):
         # I've decided to DO NOT NORMALIZE the aggregated power
         # mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
 
+        # The timestamp that index the aggregated power reading are dismembered in several additional channels
         aggregated = self.augument_with_tempoeral_features(aggregated)
 
         # Now that aggregated is  DataFrame, I can augment it with active vs. apparent info as well
@@ -129,11 +144,11 @@ class TimeSeriesDataGenerator(Sequence):
 
         return aggregated, appliance_power
 
-    def augument_with_tempoeral_features(self, serie: pd.Series) -> pd.DataFrame:
+    def augument_with_tempoeral_features(self, aggregated_reading: pd.Series) -> pd.DataFrame:
         """
-        Uses the datetime index to expand the Series with the dimensions (columns):
-        year, month, day, hour, minute, second, day of the week. These become new columns
-        alongside the original values, and the Index itself is preserved.
+        Uses the datetime index to expand the Series into a DataFrame that will store additional temporal features
+        (columns): year, month, day, hour, minute, second, day of the week. These become new columns alongside the
+        original value. The index itself is kept.
 
         Parameters:
         - serie: pd.Series - Input Pandas Series with a DatetimeIndex
@@ -141,18 +156,18 @@ class TimeSeriesDataGenerator(Sequence):
         Returns:
         - pd.DataFrame: The original Series converted to a DataFrame with additional temporal columns.
         """
-        if not isinstance(serie.index, pd.DatetimeIndex):
+        if not isinstance(aggregated_reading.index, pd.DatetimeIndex):
             raise ValueError("The input Series must have a DatetimeIndex.")
 
         # Extract temporal features from the DatetimeIndex
-        df = serie.to_frame(name="value")  # Convert Series to DataFrame with a column name
+        df = aggregated_reading.to_frame(name="value")  # Convert Series to DataFrame with a column name
         # df["year"] = serie.index.year
         # df["month"] = serie.index.month
         # df["day"] = serie.index.day
         # df["day_of_week"] = serie.index.dayofweek
-        df["hour"] = serie.index.hour
-        df["minute"] = serie.index.minute
-        df["second"] = serie.index.second
+        df["hour"] = aggregated_reading.index.hour
+        df["minute"] = aggregated_reading.index.minute
+        df["second"] = aggregated_reading.index.second
 
         # Removes the original timestamp index
         df.reset_index(drop=True, inplace=True)

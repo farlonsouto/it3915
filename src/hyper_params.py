@@ -23,7 +23,7 @@ config = {
     "max_power": 3200,
 
     # Training
-    "batch_size": 64,
+    "batch_size": 128,
     "epochs": 1,
     "learning_rate": 1e-4,
     "optimizer": "adam",
@@ -31,9 +31,9 @@ config = {
     "lambda_val": 1,  # inside the loss function
 
     # Input
-    "window_size": 100,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 50,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.2,
-    "window_stride": 25,
+    "window_stride": 5,
 
     # 1D Convolution layer
     "conv_kernel_size": 5,
@@ -42,11 +42,11 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 256,
-    "num_heads": 4,
-    "n_layers": 1,
-    "dropout": 0.1,
-    "layer_norm_epsilon": 1e-3,  # Original value is 1e-6
+    "hidden_size": 64,
+    "num_heads": 2,
+    "n_layers": 2,
+    "dropout": 0.4,
+    "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
 
     # Deconvolution layer
@@ -56,7 +56,7 @@ config = {
     "deconv_activation": "relu",
 
     # Feed-forward network dimension
-    "ff_dim": 133,
+    "ff_dim": 77,
 
     # Dimension (number of features) in the output layer
     "output_size": 1,
