@@ -41,7 +41,8 @@ print(f"y range: [{np.min(y_batch)}, {np.max(y_batch)}]")
 # Ensure these shapes match
 X_sample, y_sample = train_gen[0]
 print(f"Sample batch shapes - X: {X_sample.shape}, y: {y_sample.shape}")
-assert X_sample.shape == (wandb_config.batch_size, wandb_config.window_size, 5), "Incorrect input shape"
+assert X_sample.shape == (
+wandb_config.batch_size, wandb_config.window_size, wandb_config.num_features), "Incorrect input shape"
 assert y_sample.shape == (wandb_config.batch_size, wandb_config.window_size, 1), "Incorrect target shape"
 
 print("... The training data is available. Starting training ...")
