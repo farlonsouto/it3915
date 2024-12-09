@@ -134,12 +134,12 @@ class TimeSeriesDataGenerator(Sequence):
         aggregated = self.augument_with_tempoeral_features(aggregated)
 
         # Now that aggregated is  DataFrame, I can augment it with active vs. apparent info as well
-        if ac_type_aggregated == 'active':
-            aggregated['ac_type'] = 1
-        else:
-            aggregated['ac_type'] = 0
+        # if ac_type_aggregated == 'active':
+        #    aggregated['ac_type'] = 1
+        # else:
+        #    aggregated['ac_type'] = 0
 
-        # With this we drop the DatetimeIndex from the appliance power and convert it to a numpy array
+        # Drops the DatetimeIndex from the appliance power and convert the indexed series it to a numpy array
         appliance_power = appliance_power.values.reshape(-1, 1)
 
         return aggregated, appliance_power
@@ -148,7 +148,7 @@ class TimeSeriesDataGenerator(Sequence):
         """
         Uses the datetime index to expand the Series into a DataFrame that will store additional temporal features
         (columns): year, month, day, hour, minute, second, day of the week. These become new columns alongside the
-        original value. The index itself is kept.
+        original value. The original index is dropped.
 
         Parameters:
         - serie: pd.Series - Input Pandas Series with a DatetimeIndex
@@ -165,9 +165,9 @@ class TimeSeriesDataGenerator(Sequence):
         # df["month"] = serie.index.month
         # df["day"] = serie.index.day
         # df["day_of_week"] = serie.index.dayofweek
-        df["hour"] = aggregated_reading.index.hour
-        df["minute"] = aggregated_reading.index.minute
-        df["second"] = aggregated_reading.index.second
+        # df["hour"] = aggregated_reading.index.hour
+        # df["minute"] = aggregated_reading.index.minute
+        # df["second"] = aggregated_reading.index.second
 
         # Removes the original timestamp index
         df.reset_index(drop=True, inplace=True)
