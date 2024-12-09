@@ -16,6 +16,10 @@ def compute_stats(appliance_list):
     apparent_power_building = {}
     appliance_power_building = {}
 
+    all_active_power_global = []
+    all_apparent_power_global = []
+    appliance_power_global = {appliance: [] for appliance in appliance_list}
+
     for building in dataset.buildings:
         train_elec = dataset.buildings[building].elec
 
@@ -31,11 +35,13 @@ def compute_stats(appliance_list):
             if ('power', 'active') in train_mains_df.columns:
                 active_power = train_mains_df[('power', 'active')]
                 all_active_power.append(active_power)
+                all_active_power_global.append(active_power)
 
             # Check if apparent power is available
             if ('power', 'apparent') in train_mains_df.columns:
                 apparent_power = train_mains_df[('power', 'apparent')]
                 all_apparent_power.append(apparent_power)
+                all_apparent_power_global.append(apparent_power)
 
         # Compute stats for active power
         if all_active_power:
@@ -75,6 +81,7 @@ def compute_stats(appliance_list):
                     if ('power', 'active') in appliance_df.columns:
                         appliance_power = appliance_df[('power', 'active')]
                         all_appliance_power.append(appliance_power)
+                        appliance_power_global[appliance_name].append(appliance_power)
 
                 if all_appliance_power:
                     combined_appliance_power = pd.concat(all_appliance_power, axis=0)
@@ -85,14 +92,48 @@ def compute_stats(appliance_list):
                         "Quantiles": str(combined_appliance_power.quantile([.25, .5, .75]).values)
                     }
 
+    # Compute global stats for all buildings
+    the_entire_dataset_stats = {}
+
+    # Active Power Global Stats
+    if all_active_power_global:
+        global_active_power = pd.concat(all_active_power_global, axis=0)
+        the_entire_dataset_stats['active_power'] = {
+            "mean": float(global_active_power.mean()),
+            "std": float(global_active_power.std())
+        }
+
+    # Apparent Power Global Stats
+    if all_apparent_power_global:
+        global_apparent_power = pd.concat(all_apparent_power_global, axis=0)
+        the_entire_dataset_stats['apparent_power'] = {
+            "mean": float(global_apparent_power.mean()),
+            "std": float(global_apparent_power.std())
+        }
+
+    # Appliance Global Stats
+    the_entire_dataset_stats['appliance_power'] = {}
+    for appliance_name, powers in appliance_power_global.items():
+        if powers:
+            global_appliance_power = pd.concat(powers, axis=0)
+            the_entire_dataset_stats['appliance_power'][appliance_name] = {
+                "mean": float(global_appliance_power.mean()),
+                "std": float(global_appliance_power.std())
+            }
+
     # Return the computed dictionaries
-    return active_power_building, apparent_power_building, appliance_power_building
+    return active_power_building, apparent_power_building, appliance_power_building, the_entire_dataset_stats
 
 
-active_building, apparent_building, appliance_building = compute_stats(['fridge', 'kettle'])
-print("Aggregated Active Power Stats per building with Quantiles [25%, 50%, 75%]")
+active_building, apparent_building, appliance_building, global_stats = compute_stats(
+    ['fridge', 'kettle', 'washer', 'microwave', 'dish washer'])
+
+print("Aggregated Active Power Stats per building with Quantiles [25%, 50%, 75%]:")
 print(json.dumps(active_building, indent=4))
 print("Aggregated Apparent Power Stats per building  with Quantiles [25%, 50%, 75%]:")
 print(json.dumps(apparent_building, indent=4))
 print("Appliance Active Power Stats per building  with Quantiles [25%, 50%, 75%]:")
 print(json.dumps(appliance_building, indent=4))
+
+print("Global Stats Across All Buildings:")
+print(json.dumps(global_stats, indent=4))
