@@ -31,7 +31,7 @@ except Exception as e:
     bert_model = BERT4NILM(wandb_config)
 
     # Build the model with input shape
-    bert_model.build((None, wandb_config.window_size, 5))
+    bert_model.build((None, wandb_config.window_size, wandb_config.num_features))
 
     # Load the weights from the checkpoint files
     bert_model.load_weights('../models/bert_model')
@@ -40,8 +40,8 @@ except Exception as e:
     # Compile the model for evaluation
     bert_model.compile(
         metrics=[
-            tf.keras.metrics.MeanAbsoluteError(name='MAE'),
-            MeanRelativeError(name='MRE')
+            MeanRelativeError(name='MRE'),
+            tf.keras.metrics.MeanAbsoluteError(name='MAE')
         ]
     )
 

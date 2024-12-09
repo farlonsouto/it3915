@@ -27,7 +27,7 @@ config = {
     "epochs": 10,
     "learning_rate": 1e-4,
     "optimizer": "adam",
-    "loss": "bert4nilm_loss",  # The BERT4NILM custom loss is called from inside the model
+    "loss": "huber",  # "bert4nilm_loss", "mse" or "huber" seems to make no difference
     "lambda_val": 1.0,  # inside the loss function
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
 
