@@ -18,12 +18,11 @@ class TimeSeriesDataGenerator(Sequence):
         and have shapes (window size, 5) and (window size, 1) respectively.
     """
 
-    def __init__(self, dataset, buildings, appliance, mean_power, std_power, wandb_config, is_training=True):
+    def __init__(self, dataset, buildings, appliance, normalization_params, wandb_config, is_training=True):
         self.dataset = dataset
         self.buildings = buildings
         self.appliance = appliance
-        self.mean_power = mean_power
-        self.std_power = std_power
+        self.normalization_params = normalization_params
         self.window_size = wandb_config.window_size
         self.batch_size = wandb_config.batch_size
         self.max_power = wandb_config.max_power
@@ -127,25 +126,15 @@ class TimeSeriesDataGenerator(Sequence):
         appliance_power = appliance_power.where(mask,
                                                 appliance_power.clip(lower=self.on_threshold, upper=self.max_power))
 
-        # I've decided to DO NOT NORMALIZE the aggregated power
-        # mains_power = (mains_power - self.mean_power) / (self.std_power + 1e-8)
-
-        # The timestamp that index the aggregated power reading are dismembered in several additional channels
-        aggregated = self.augument_with_tempoeral_features(aggregated)
-
-        # Now that aggregated is  DataFrame, I can augment it with active vs. apparent info as well
-        # if ac_type_aggregated == 'active':
-        #    aggregated['ac_type'] = 1
-        # else:
-        #    aggregated['ac_type'] = 0
-
-        # Drops the DatetimeIndex from the appliance power and convert the indexed series it to a numpy array
+        # Drops the DatetimeIndex: The indexed series turn into a numpy array
         appliance_power = appliance_power.values.reshape(-1, 1)
+        aggregated = aggregated.values.reshape(-1, 1)
 
         return aggregated, appliance_power
 
     def augument_with_tempoeral_features(self, aggregated_reading: pd.Series) -> pd.DataFrame:
         """
+        TODO: To be removed. Augmenting with it doesn't help with the current model architecture
         Uses the datetime index to expand the Series into a DataFrame that will store additional temporal features
         (columns): year, month, day, hour, minute, second, day of the week. These become new columns alongside the
         original value. The original index is dropped.
@@ -169,7 +158,7 @@ class TimeSeriesDataGenerator(Sequence):
         # df["minute"] = aggregated_reading.index.minute
         # df["second"] = aggregated_reading.index.second
 
-        # Removes the original timestamp index
+        # Must drop the original index anyway
         df.reset_index(drop=True, inplace=True)
 
         return df

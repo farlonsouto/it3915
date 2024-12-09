@@ -1,7 +1,5 @@
-import math
 import warnings
 
-import pandas as pd
 from nilmtk import DataSet
 
 from .generator import TimeSeriesDataGenerator
@@ -20,49 +18,46 @@ class TimeSeries:
         self.dataset = dataset
         self.wandb_config = wandb_config
         self.appliance = wandb_config.appliance
-        self.mean_power = None
-        self.std_power = None
-        self._compute_normalization_params()
-
-    def _compute_normalization_params(self):
-        """
-        Computes normalization parameters (mean and standard deviation) using the training data.
-        """
-        all_train_mains_power = []
-
-        for building in self.training_buildings:
-            train_elec = self.dataset.buildings[building].elec
-            train_mains = train_elec.mains()
-            mains_data_frame = train_mains.load()
-
-            for train_mains_df in mains_data_frame:
-                # Active has priority, but it may not be available
-                if ('power', 'active') in train_mains_df.columns:
-                    mains_power = train_mains_df[('power', 'active')]
-                else:
-                    mains_power = train_mains_df[('power', 'apparent')]
-                all_train_mains_power.append(mains_power)
-
-        if all_train_mains_power:
-            combined_mains_power = pd.concat(all_train_mains_power, axis=0)
-            self.mean_power = combined_mains_power.mean()
-            self.std_power = combined_mains_power.std()
-            print(f"Mean power: {self.mean_power}")
-            print(f"Std power: {self.std_power}")
-
-            if math.isnan(self.mean_power) or math.isnan(self.std_power):
-                raise ValueError("Normalization parameters contain NaN values. Check your data preprocessing steps.")
-        else:
-            raise ValueError("No training data available for normalization.")
+        # Calculated for UK Dale dataset and preserved
+        self.normalization_params = {
+            "aggregated": {
+                "active": {
+                    "mean": 356.242431640625,
+                    "std": 481.7847900390625
+                },
+                "apparent": {
+                    "mean": 415.4137878417969,
+                    "std": 490.3323669433594
+                }
+            },
+            "appliance": {
+                "fridge": {
+                    "mean": 40.021522521972656,
+                    "std": 52.8307991027832
+                },
+                "kettle": {
+                    "mean": 17.524539947509766,
+                    "std": 200.2118377685547
+                },
+                "microwave": {
+                    "mean": 11.71904468536377,
+                    "std": 107.25408935546875
+                },
+                "dish washer": {
+                    "mean": 27.594993591308594,
+                    "std": 237.3380584716797
+                }
+            }
+        }
 
     def getTrainingDataGenerator(self):
         return TimeSeriesDataGenerator(
-            self.dataset, self.training_buildings, self.appliance, self.mean_power,
-            self.std_power, self.wandb_config, is_training=True
+            self.dataset, self.training_buildings, self.appliance, self.normalization_params, self.wandb_config,
+            is_training=True
         )
 
     def getTestDataGenerator(self):
         return TimeSeriesDataGenerator(
-            self.dataset, self.test_buildings, self.appliance, self.mean_power,
-            self.std_power, self.wandb_config, is_training=False
+            self.dataset, self.test_buildings, self.appliance, self.normalization_params, self.wandb_config,
+            is_training=False
         )
