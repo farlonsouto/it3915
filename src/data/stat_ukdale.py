@@ -3,6 +3,8 @@ import json
 import pandas as pd
 from nilmtk import DataSet
 
+from src import hyper_params
+
 
 def compute_stats(appliance_list):
     """
@@ -10,7 +12,7 @@ def compute_stats(appliance_list):
     and specified appliances across buildings.
     """
 
-    dataset = DataSet('../datasets/ukdale.h5')
+    dataset = DataSet('../../datasets/ukdale.h5')
 
     active_power_building = {}
     apparent_power_building = {}
@@ -66,26 +68,26 @@ def compute_stats(appliance_list):
 
         # Handle appliances
         appliance_power_building[str(building)] = {}
-        for appliance_name in appliance_list:
-            appliance = None
+        for current_appliance in appliance_list:
+            nilmtk_appliance = None
             try:
-                appliance = train_elec[appliance_name]
+                nilmtk_appliance = train_elec[current_appliance]
             except KeyError:
-                appliance_power_building[str(building)][appliance_name] = 'Not available'
+                appliance_power_building[str(building)][current_appliance] = 'Not available'
                 continue
-            if appliance:
-                appliance_data = appliance.load()
+            if nilmtk_appliance:
+                appliance_data = nilmtk_appliance.load()
                 all_appliance_power = []
 
                 for appliance_df in appliance_data:
                     if ('power', 'active') in appliance_df.columns:
                         appliance_power = appliance_df[('power', 'active')]
                         all_appliance_power.append(appliance_power)
-                        appliance_power_global[appliance_name].append(appliance_power)
+                        appliance_power_global[current_appliance].append(appliance_power)
 
                 if all_appliance_power:
                     combined_appliance_power = pd.concat(all_appliance_power, axis=0)
-                    appliance_power_building[str(building)][appliance_name] = {
+                    appliance_power_building[str(building)][current_appliance] = {
                         "mean": float(combined_appliance_power.mean()),
                         "median": float(combined_appliance_power.median()),
                         "std": float(combined_appliance_power.std()),
@@ -113,16 +115,63 @@ def compute_stats(appliance_list):
 
     # Appliance Global Stats
     the_entire_dataset_stats['appliance_power'] = {}
-    for appliance_name, powers in appliance_power_global.items():
+    for current_appliance, powers in appliance_power_global.items():
         if powers:
+            config = hyper_params.for_appliance(current_appliance)
+            on_threshold = config["on_threshold"]
+            min_on_duration = config["min_on_duration"]
             global_appliance_power = pd.concat(powers, axis=0)
-            the_entire_dataset_stats['appliance_power'][appliance_name] = {
+            mean_on_duration, std_on_duration = calculate_activation_stats(global_appliance_power, on_threshold,
+                                                                           min_on_duration)
+            the_entire_dataset_stats['appliance_power'][current_appliance] = {
                 "mean": float(global_appliance_power.mean()),
-                "std": float(global_appliance_power.std())
+                "std": float(global_appliance_power.std()),
+                "ON_mean": float(
+                    global_appliance_power[global_appliance_power > on_threshold].mean()),
+                "ON_std": float(
+                    global_appliance_power[global_appliance_power > on_threshold].std()),
+                "ON_duration_mean": mean_on_duration,
+                "ON_duration_std": std_on_duration
             }
 
     # Return the computed dictionaries
     return active_power_building, apparent_power_building, appliance_power_building, the_entire_dataset_stats
+
+
+def calculate_activation_stats(appliance_power, on_threshold, min_on_duration) -> tuple:
+    """
+    Calculate statistics for the appliance ON durations.
+
+    Parameters:
+    - appliance_power: pd.Series containing appliance power data.
+    - on_threshold: minimum value from which the appliance is considered ON
+    - min_on_min_on_duration: the minimum amount of seconds the appliance must be active to be considered a ON
+
+    Returns:
+    - A tuple of ( mean_on_duration, std_on_duration)
+    """
+    # Filter ON periods
+    on_values = appliance_power[appliance_power > on_threshold]
+
+    # Identify contiguous ON periods
+    # Create a boolean mask for ON periods
+    on_mask = appliance_power > on_threshold
+
+    # Use cumsum to assign a unique label to each contiguous ON period
+    on_periods = (on_mask != on_mask.shift()).cumsum() * on_mask
+
+    # Group by the period labels and calculate their durations (number of time steps)
+    on_durations = on_periods.value_counts().loc[lambda x: x > min_on_duration].values
+
+    # Non-active periods make the largest label count, so we remove it
+    on_durations.sort()
+    on_durations = on_durations[:-1]
+
+    # Calculate mean and std for ON durations
+    mean_on_duration = on_durations.mean() if len(on_durations) > 0 else 0
+    std_on_duration = on_durations.std() if len(on_durations) > 0 else 0
+
+    return mean_on_duration, std_on_duration
 
 
 active_building, apparent_building, appliance_building, global_stats = compute_stats(

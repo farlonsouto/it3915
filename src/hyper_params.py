@@ -23,18 +23,20 @@ config = {
     "max_power": 3200,
 
     # Training
-    "batch_size": 128,
-    "epochs": 10,
+    "batch_size": 64,
+    "epochs": 5,
     "learning_rate": 1e-4,
     "optimizer": "adam",
-    "loss": "huber",  # "bert4nilm_loss", "mse" or "huber" seems to make no difference
+    "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
     "lambda_val": 1.0,  # inside the loss function
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
 
     # Input
-    "window_size": 100,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 50,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.2,
-    "window_stride": 10,
+    "window_stride": 1,
+    "add_artificial_activations": False,
+    "balance_enabled": True,
 
     # 1D Convolution layer
     "conv_kernel_size": 5,
@@ -45,7 +47,7 @@ config = {
     # Transformer
     "hidden_size": 128,
     "num_heads": 2,
-    "n_layers": 1,
+    "n_layers": 2,
     "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
@@ -65,26 +67,51 @@ config = {
 
 
 def for_appliance(appliance) -> dict:
+    # Initialize the configuration dictionary
     config["appliance"] = appliance
+
+    # Set the appliance-specific configuration
     if appliance == "kettle":
-        config["on_threshold"] = 2000
-        config["max_power"] = 3200
-        config["lambda_val"] = 1.0
+        config.update({
+            "lambda_val": 1.0,
+            "max_power": 3200,
+            "on_threshold": 2000,
+            "min_on_duration": 0,
+            "min_off_duration": 12,
+        })
     elif appliance == "fridge":
-        config["on_threshold"] = 50
-        config["max_power"] = 400
-        config["lambda_val"] = 1e-6
+        config.update({
+            "lambda_val": 1e-6,
+            "max_power": 400,
+            "on_threshold": 50,
+            "min_on_duration": 60,
+            "min_off_duration": 12,
+        })
     elif appliance == "washer":
-        config["on_threshold"] = 20
-        config["max_power"] = 2500
-        config["lambda_val"] = 1e-2
+        config.update({
+            "lambda_val": 1e-2,
+            "max_power": 2500,
+            "on_threshold": 20,
+            "min_on_duration": 1800,
+            "min_off_duration": 160,
+        })
     elif appliance == "microwave":
-        config["on_threshold"] = 200
-        config["max_power"] = 3000
-        config["lambda_val"] = 1.0
-    elif appliance == "dishwasher":
-        config["on_threshold"] = 10
-        config["max_power"] = 2500
-        config["lambda_val"] = 1.0
+        config.update({
+            "lambda_val": 1.0,
+            "max_power": 3000,
+            "on_threshold": 200,
+            "min_on_duration": 12,
+            "min_off_duration": 30,
+        })
+    elif appliance == "dish washer":
+        config.update({
+            "lambda_val": 1.0,
+            "max_power": 2500,
+            "on_threshold": 10,
+            "min_on_duration": 1800,
+            "min_off_duration": 1800,
+        })
+    else:
+        raise ValueError(f"Unknown appliance: {appliance}")
 
     return config

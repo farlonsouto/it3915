@@ -3,15 +3,13 @@ import pandas as pd
 from nilmtk import TimeFrame
 from tensorflow.keras.utils import Sequence
 
+from .adjustment import Augment, Balance
+
 
 class TimeSeriesDataGenerator(Sequence):
     """ Generates
-        a) An X (aggregated reading, input) with 5 (five) channels:
-            1. Mains power
-            2. Hour of the day (0-23)
-            3. Minute (0 - 59)
-            4. Second (0 - 59)
-            5. AC type (1 - active, 0 - apparent)
+        a) An x (aggregated reading, input) with 1 (one) single channels:
+            1. Mains power (mixed AC types)
         b) An y (appliance reading, ground truth) with 1 channel:
             1. Appliance power (always wit the AC type active)
         At the end, yields multiple pairs (x, y) where x and y are aligned according to their original timestamps
@@ -27,7 +25,11 @@ class TimeSeriesDataGenerator(Sequence):
         self.batch_size = wandb_config.batch_size
         self.max_power = wandb_config.max_power
         self.on_threshold = wandb_config.on_threshold
+        self.min_on_duration = wandb_config.min_on_duration
         self.window_stride = wandb_config.window_stride
+        self.wandb_config = wandb_config
+        self.balance_enabled = wandb_config.balance_enabled
+        self.add_artificial_activations = wandb_config.add_artificial_activations
         self.is_training = is_training
         self.data_generator = self._data_generator()
         self.total_samples = self._count_samples()
@@ -126,42 +128,20 @@ class TimeSeriesDataGenerator(Sequence):
         appliance_power = appliance_power.where(mask,
                                                 appliance_power.clip(lower=self.on_threshold, upper=self.max_power))
 
-        # Drops the DatetimeIndex: The indexed series turn into a numpy array
+        if self.appliance in ['kettle', 'microwave', 'dish washer', 'washer']:
+            # Handling the least used appliances: rarely ON and, when ON, for short periods.
+            augment = Augment(self.wandb_config, self.normalization_params)
+            balance = Balance(self.wandb_config, self.normalization_params)
+            if self.add_artificial_activations:
+                aggregated, appliance_power = augment.with_artificial_activations(aggregated, appliance_power)
+            if self.balance_enabled:
+                aggregated, appliance_power = balance.on_off_periods(aggregated, appliance_power)
+
+            # Drops the DatetimeIndex: The indexed series turn into a numpy array
         appliance_power = appliance_power.values.reshape(-1, 1)
         aggregated = aggregated.values.reshape(-1, 1)
 
         return aggregated, appliance_power
-
-    def augument_with_tempoeral_features(self, aggregated_reading: pd.Series) -> pd.DataFrame:
-        """
-        TODO: To be removed. Augmenting with it doesn't help with the current model architecture
-        Uses the datetime index to expand the Series into a DataFrame that will store additional temporal features
-        (columns): year, month, day, hour, minute, second, day of the week. These become new columns alongside the
-        original value. The original index is dropped.
-
-        Parameters:
-        - serie: pd.Series - Input Pandas Series with a DatetimeIndex
-
-        Returns:
-        - pd.DataFrame: The original Series converted to a DataFrame with additional temporal columns.
-        """
-        if not isinstance(aggregated_reading.index, pd.DatetimeIndex):
-            raise ValueError("The input Series must have a DatetimeIndex.")
-
-        # Extract temporal features from the DatetimeIndex
-        df = aggregated_reading.to_frame(name="value")  # Convert Series to DataFrame with a column name
-        # df["year"] = serie.index.year
-        # df["month"] = serie.index.month
-        # df["day"] = serie.index.day
-        # df["day_of_week"] = serie.index.dayofweek
-        # df["hour"] = aggregated_reading.index.hour
-        # df["minute"] = aggregated_reading.index.minute
-        # df["second"] = aggregated_reading.index.second
-
-        # Must drop the original index anyway
-        df.reset_index(drop=True, inplace=True)
-
-        return df
 
     def _count_samples(self):
         """

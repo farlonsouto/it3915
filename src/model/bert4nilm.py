@@ -133,7 +133,7 @@ class BERT4NILM(Model):
 
         x = self.deconv(x)
         x = self.output_layer1(x)
-        x = tf.math.tanh(x)  # Tanh activation - This is critical: aIt is NOT the activation function of a layer
+        x = tf.math.tanh(x)  # Tanh activation - This is critical: It is NOT the activation function of a layer
         pred_appl_power = self.output_layer2(x)
 
         # Multiply by max power and clamp
