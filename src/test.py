@@ -3,7 +3,7 @@ import tensorflow as tf
 import wandb
 from nilmtk import DataSet
 
-from cmd_line_input import get_appliance_arg
+from cmd_line_input import get_args
 from custom.metric.regression import MeanRelativeError
 from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
@@ -16,7 +16,7 @@ set_gpu_memory_growth()
 
 wandb.init(
     project="nilm_bert_transformer",
-    config=for_appliance(get_appliance_arg())
+    config=for_appliance(get_args())
 )
 
 # Retrieve the configuration from WandB

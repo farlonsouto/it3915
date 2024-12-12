@@ -3,24 +3,31 @@ import wandb
 from nilmtk import DataSet
 from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 
-from cmd_line_input import get_appliance_arg
+from cmd_line_input import get_args
 from data.timeseries import TimeSeries
+from factory import Create
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_appliance
-from model_factory import create_model
 
 # Set GPU memory growth
 set_gpu_memory_growth()
 
+(model_name, appliance) = get_args()
+
 wandb.init(
     project="nilm_bert_transformer",
-    config=for_appliance(get_appliance_arg())
+    config=for_appliance(appliance)
 )
 
 # Retrieve the configuration from WandB
 wandb_config = wandb.config
 
-bert_model = create_model(wandb_config)
+if model_name == "bert":
+    nn_model = Create(wandb_config).bert4nilm()
+elif model_name == "seq2seq":
+    nn_model = Create(wandb_config).seq2seq()
+else:
+    raise Exception("Invalid model name:", model_name)
 
 path_to_dataset = '../datasets/ukdale.h5'
 print("Fetching data from the dataset located at ", path_to_dataset)
@@ -54,7 +61,7 @@ my_callbacks = [
 ]
 
 # Train the model and track the training process using WandB
-history = bert_model.fit(
+history = nn_model.fit(
     timeSeries.getTrainingDataGenerator(),
     epochs=wandb_config.epochs,
     validation_data=timeSeries.getTestDataGenerator(),

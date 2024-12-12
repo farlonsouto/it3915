@@ -36,8 +36,8 @@ class Augment:
 
         # Generate artificial ON periods
         np.random.seed(42)  # For reproducibility
-        # About 25% of the time steps are populated activations
-        num_activations = len(appliance_power) // (4 * int(mean_on_duration))
+        # About 50% of the time steps are populated with synthetic activations
+        num_activations = len(appliance_power) // (2 * int(mean_on_duration))
 
         for _ in range(int(num_activations)):
             # Randomly sample ON duration
@@ -119,7 +119,5 @@ class Balance:
         balanced_appliance_power = balanced_appliance_power.sort_index()
 
         balanced_aggregated_power = aggregated_power.loc[balanced_appliance_power.index]
-
-        # print("----------------------- Aggregated power size: ", len(balanced_aggregated_power))
 
         return balanced_aggregated_power, balanced_appliance_power

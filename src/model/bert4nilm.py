@@ -109,9 +109,6 @@ class BERT4NILM(Model):
         return Model(inputs, layers.Add()([out1, ff_output]))
 
     def call(self, inputs, training=None, mask=None):
-        # Ensure inputs are 3D (batch_size, sequence_length, features)
-        if inputs.shape.ndims == 2:  # (batch_size, sequence_length)
-            inputs = tf.expand_dims(inputs, axis=-1)  # Add feature dimension
 
         # Pass through conv and pooling layers
         x_token = self.pool(self.conv(inputs))
