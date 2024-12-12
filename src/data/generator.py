@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
+from data.adjustment import Augment, Balance
 from nilmtk import TimeFrame
 from tensorflow.keras.utils import Sequence
-
-from .adjustment import Augment, Balance
 
 
 class TimeSeriesDataGenerator(Sequence):
@@ -199,18 +198,29 @@ class TimeSeriesDataGenerator(Sequence):
     def __getitem__(self, index):
         """
         Fetches a batch of data using the generator.
+        Adjusted to work for Seq2Point by using midpoint targets.
         """
         batch_X, batch_y = [], []
         for _ in range(self.batch_size):
             try:
                 X, y = next(self.data_generator)
+                # For Seq2Point, use the midpoint of y as the target
+                if self.wandb_config.model == 'seq2p':
+                    midpoint = len(y) // 2
+                    y = y[midpoint]
                 batch_X.append(X)
                 batch_y.append(y)
             except StopIteration:
                 # Reset the generator and fetch the next batch
                 self.data_generator = self._data_generator()
                 X, y = next(self.data_generator)
+                if self.wandb_config.model == 'seq2p':
+                    midpoint = len(y) // 2
+                    y = y[midpoint]
                 batch_X.append(X)
                 batch_y.append(y)
 
+        # Only reshape batch y for the Seq2Point model
+        # if self.wandb_config.model == 'seq2p':
+        #   return np.array(batch_X), np.array(batch_y).reshape(-1, 1)
         return np.array(batch_X), np.array(batch_y)

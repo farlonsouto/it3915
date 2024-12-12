@@ -3,10 +3,11 @@ import tensorflow as tf
 from custom.loss.bert4nilm import LossFunction
 from custom.metric.regression import MeanRelativeError
 from model.bert4nilm import BERT4NILM
+from model.seq2p import Seq2PointNILM
 from model.seq2seq import Seq2SeqNILM
 
 
-class Create:
+class ModelFactory:
 
     def __init__(self, wandb_config):
         self.wandb_config = wandb_config
@@ -24,13 +25,27 @@ class Create:
             "bert4nilm_loss": LossFunction(wandb_config)
         }
 
-    def bert4nilm(self):
+    def create_model(self, model_name):
+        if model_name == "bert":
+            return self.__bert4nilm()
+        elif model_name == "seq2seq":
+            return self.__seq2seq()
+        elif model_name == "seq2p":
+            return self.__seq2p()
+        else:
+            raise Exception("Invalid model name:", model_name)
+
+    def __bert4nilm(self):
         # Instantiate the BERT4NILM model
         model = BERT4NILM(self.wandb_config)
         return self.__build_compile(model)
 
-    def seq2seq(self):
+    def __seq2seq(self):
         model = Seq2SeqNILM(self.wandb_config)
+        return self.__build_compile(model)
+
+    def __seq2p(self):
+        model = Seq2PointNILM(self.wandb_config)
         return self.__build_compile(model)
 
     def __build_compile(self, model):

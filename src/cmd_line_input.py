@@ -6,8 +6,8 @@ def get_args():
     model = None
     args = [sys.argv[0:]]
 
-    for model_name in ['bert', 'seq2seq']:
-        if model_name in args:
+    for model_name in ['bert', 'seq2seq', 'seq2p']:
+        if model_name in args[0]:
             model = model_name
 
     if model is None:
@@ -15,7 +15,7 @@ def get_args():
         print(f"Invalid model name. Using bert as default.")
 
     for appliance_name in ['kettle', 'fridge', 'washer', 'microwave', 'dish washer']:
-        if appliance_name in args:
+        if appliance_name in args[0]:
             appliance = appliance_name
 
     if appliance is None:

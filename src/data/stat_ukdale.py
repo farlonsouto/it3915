@@ -117,7 +117,7 @@ def compute_stats(appliance_list):
     the_entire_dataset_stats['appliance_power'] = {}
     for current_appliance, powers in appliance_power_global.items():
         if powers:
-            config = hyper_params.for_appliance(current_appliance)
+            config = hyper_params.for_model_appliance(current_appliance)
             on_threshold = config["on_threshold"]
             min_on_duration = config["min_on_duration"]
             global_appliance_power = pd.concat(powers, axis=0)

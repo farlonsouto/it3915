@@ -5,9 +5,9 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from cmd_line_input import get_args
 from data.timeseries import TimeSeries
-from factory import Create
+from factory import ModelFactory
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
-from hyper_params import for_appliance
+from hyper_params import for_model_appliance
 
 # Set GPU memory growth
 set_gpu_memory_growth()
@@ -15,19 +15,16 @@ set_gpu_memory_growth()
 (model_name, appliance) = get_args()
 
 wandb.init(
-    project="nilm_bert_transformer",
-    config=for_appliance(appliance)
+    project="nilm_multiple_models",
+    config=for_model_appliance(model_name, appliance)
 )
 
 # Retrieve the configuration from WandB
 wandb_config = wandb.config
 
-if model_name == "bert":
-    nn_model = Create(wandb_config).bert4nilm()
-elif model_name == "seq2seq":
-    nn_model = Create(wandb_config).seq2seq()
-else:
-    raise Exception("Invalid model name:", model_name)
+nn_model = ModelFactory(wandb_config).create_model(model_name)
+
+nn_model.summary()
 
 path_to_dataset = '../datasets/ukdale.h5'
 print("Fetching data from the dataset located at ", path_to_dataset)
@@ -50,14 +47,18 @@ X_sample, y_sample = train_gen[0]
 print(f"Sample batch shapes - X: {X_sample.shape}, y: {y_sample.shape}")
 assert X_sample.shape == (
     wandb_config.batch_size, wandb_config.window_size, wandb_config.num_features), "Incorrect input shape"
-assert y_sample.shape == (wandb_config.batch_size, wandb_config.window_size, 1), "Incorrect target shape"
+
+if wandb_config.model == "seq2p":
+    assert y_sample.shape == (wandb_config.batch_size, 1), "Incorrect seq2p target shape"
+else:
+    assert y_sample.shape == (wandb_config.batch_size, wandb_config.window_size, 1), "Incorrect seq2seq target shape"
 
 print("... The training data is available. Starting training ...")
 
 my_callbacks = [
     # WandbMetricsLogger(log_freq='batch'),
     EarlyStopping(patience=10, monitor='val_MAE', restore_best_weights=True),
-    ModelCheckpoint('../models/bert_model', save_best_only=True, monitor='MAE', save_format="tf")
+    ModelCheckpoint('../models/{}_model'.format(model_name), save_best_only=True, monitor='MAE', save_format="tf")
 ]
 
 # Train the model and track the training process using WandB

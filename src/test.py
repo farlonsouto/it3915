@@ -6,46 +6,46 @@ from nilmtk import DataSet
 from cmd_line_input import get_args
 from custom.metric.regression import MeanRelativeError
 from data.timeseries import TimeSeries
+from factory import ModelFactory
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
-from hyper_params import for_appliance
-from model.bert4nilm import BERT4NILM
+from hyper_params import for_model_appliance
 from plotter import plot_comparison
 
 # Set GPU memory growth
 set_gpu_memory_growth()
 
+(model_name, appliance) = get_args()
+
 wandb.init(
-    project="nilm_bert_transformer",
-    config=for_appliance(get_args())
+    project="nilm_multiple_models",
+    config=for_model_appliance(model_name, appliance)
 )
 
 # Retrieve the configuration from WandB
 wandb_config = wandb.config
 
 try:
-    bert_model = tf.keras.models.load_model('../models/bert_model')
+    nn_model = tf.keras.models.load_model('../models/}_model'.format(model_name))
 except Exception as e:
     print("""Error loading the model: """, e)
-    print("Trying the rebuild and load weights approach ...")
-    # Rebuild the model architecture
-    bert_model = BERT4NILM(wandb_config)
+    print("Trying to rebuild the model and load weights...")
 
-    # Build the model with input shape
-    bert_model.build((None, wandb_config.window_size, wandb_config.num_features))
+    # Rebuild the model
+    nn_model = ModelFactory(wandb_config).create_model(model_name)
 
     # Load the weights from the checkpoint files
-    bert_model.load_weights('../models/bert_model')
+    nn_model.load_weights('../models/bert_model')
     print("Model architecture rebuilt and weights loaded successfully!")
 
     # Compile the model for evaluation
-    bert_model.compile(
+    nn_model.compile(
         metrics=[
             MeanRelativeError(name='MRE'),
             tf.keras.metrics.MeanAbsoluteError(name='MAE')
         ]
     )
 
-bert_model.summary()
+nn_model.summary()
 
 print("Model loaded successfully!")
 
@@ -58,14 +58,14 @@ timeSeries = TimeSeries(dataset, [2], [2], wandb_config)
 test_gen = timeSeries.getTestDataGenerator()
 
 # Evaluate the model on the test data
-results = bert_model.evaluate(test_gen)
+results = nn_model.evaluate(test_gen)
 print("\nModel performance on test data:")
-for metric_name, result in zip(bert_model.metrics_names, results):
+for metric_name, result in zip(nn_model.metrics_names, results):
     print(f"{metric_name}: {result}")
 
 # Get predictions on the test data
 X_test, y_test = next(iter(test_gen))  # Get the first batch of test data
-predictions = bert_model.predict(X_test)
+predictions = nn_model.predict(X_test)
 
 # Print example predictions
 print("\nExample predictions:")
@@ -76,7 +76,7 @@ for i in range(5):  # Print the first 5 samples
     print("----")
 
 # Plot the comparison
-plot_comparison(test_gen, bert_model)
+plot_comparison(test_gen, nn_model)
 
 # Print some statistics
 print("\nStatistics:")

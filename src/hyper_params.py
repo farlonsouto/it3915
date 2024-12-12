@@ -24,7 +24,7 @@ config = {
 
     # Training
     "batch_size": 64,
-    "epochs": 5,
+    "epochs": 3,
     "learning_rate": 1e-4,
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
@@ -35,7 +35,7 @@ config = {
     "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.2,
     "window_stride": 1,
-    "add_artificial_activations": True,
+    "add_artificial_activations": False,
     "balance_enabled": False,
 
     # 1D Convolution layer
@@ -66,12 +66,13 @@ config = {
 }
 
 
-def for_appliance(appliance) -> dict:
+def for_model_appliance(model_name, appliance_name) -> dict:
     # Initialize the configuration dictionary
-    config["appliance"] = appliance
+    config["appliance"] = appliance_name
+    config["model"] = model_name
 
     # Set the appliance-specific configuration
-    if appliance == "kettle":
+    if appliance_name == "kettle":
         config.update({
             "lambda_val": 1.0,
             "max_power": 3200,
@@ -79,7 +80,7 @@ def for_appliance(appliance) -> dict:
             "min_on_duration": 0,
             "min_off_duration": 12,
         })
-    elif appliance == "fridge":
+    elif appliance_name == "fridge":
         config.update({
             "lambda_val": 1e-6,
             "max_power": 400,
@@ -87,7 +88,7 @@ def for_appliance(appliance) -> dict:
             "min_on_duration": 60,
             "min_off_duration": 12,
         })
-    elif appliance == "washer":
+    elif appliance_name == "washer":
         config.update({
             "lambda_val": 1e-2,
             "max_power": 2500,
@@ -95,7 +96,7 @@ def for_appliance(appliance) -> dict:
             "min_on_duration": 1800,
             "min_off_duration": 160,
         })
-    elif appliance == "microwave":
+    elif appliance_name == "microwave":
         config.update({
             "lambda_val": 1.0,
             "max_power": 3000,
@@ -103,7 +104,7 @@ def for_appliance(appliance) -> dict:
             "min_on_duration": 12,
             "min_off_duration": 30,
         })
-    elif appliance == "dish washer":
+    elif appliance_name == "dish washer":
         config.update({
             "lambda_val": 1.0,
             "max_power": 2500,
@@ -112,6 +113,6 @@ def for_appliance(appliance) -> dict:
             "min_off_duration": 1800,
         })
     else:
-        raise ValueError(f"Unknown appliance: {appliance}")
+        raise ValueError(f"Unknown appliance: {appliance_name}")
 
     return config
