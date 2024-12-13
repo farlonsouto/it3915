@@ -38,6 +38,7 @@ class BERT4NILM(Model):
     def __init__(self, wandb_config):
         super(BERT4NILM, self).__init__()
 
+        self.mask_positions = None
         self.hyper_param = wandb_config
         self.latent_len = wandb_config.window_size // 2
 
@@ -76,7 +77,7 @@ class BERT4NILM(Model):
 
         self.output_layer1 = layers.Dense(
             128,  # So to match the article's implementation of reference
-            activation='linear',
+            activation='tanh',
             kernel_initializer='truncated_normal',
             kernel_regularizer="l2"
         )
@@ -109,7 +110,6 @@ class BERT4NILM(Model):
         return Model(inputs, layers.Add()([out1, ff_output]))
 
     def call(self, inputs, training=None, mask=None):
-
         # Pass through conv and pooling layers
         x_token = self.pool(self.conv(inputs))
 
@@ -120,18 +120,21 @@ class BERT4NILM(Model):
         embedding = x_token + positional_embedding
 
         if training:
+            # Randomly mask a proportion p of the input
             mask = tf.random.uniform(shape=tf.shape(embedding)[:2]) < self.hyper_param.masking_portion
             embedding = tf.where(mask[:, :, tf.newaxis], 0.0, embedding)
+            # Save the mask positions for loss calculation
+            self.mask_positions = tf.cast(mask, tf.float32)  # Save as 1.0 for masked, 0.0 otherwise
 
         x = self.dropout(embedding, training=training)
 
         for transformer in self.transformer_blocks:
             x = transformer(x, training=training)
 
+        # Deconvolution followed by a Dense layer with Tanh activation
         x = self.deconv(x)
-        x = self.output_layer1(x)
-        x = tf.math.tanh(x)  # Tanh activation - This is critical: It is NOT the activation function of a layer
-        pred_appl_power = self.output_layer2(x)
+        x = self.output_layer1(x)  # First linear layer with Tanh activation (matches Eq. 5)
+        pred_appl_power = self.output_layer2(x)  # Second linear layer
 
         # Multiply by max power and clamp
         # Apply upper limit of max_power to all values
@@ -139,3 +142,26 @@ class BERT4NILM(Model):
                                            self.hyper_param.max_power)
 
         return pred_appl_power
+
+
+class MaskedBERT4NILM(BERT4NILM):
+    def train_step(self, data):
+        x, y = data  # Unpack the data
+
+        with tf.GradientTape() as tape:
+            # Forward pass
+            y_pred = self(x, training=True)
+
+            # Compute masked loss
+            self.compiled_loss.mask_positions = self.mask_positions
+            self.compiled_loss.is_training = True
+            loss = self.compiled_loss(y, y_pred)
+
+        # Backpropagation and optimizer step
+        gradients = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        # Update metrics
+        self.compiled_metrics.update_state(y, y_pred)
+
+        return {m.name: m.result() for m in self.metrics}

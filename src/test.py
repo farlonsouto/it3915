@@ -6,7 +6,7 @@ from nilmtk import DataSet
 from cmd_line_input import get_args
 from custom.metric.regression import MeanRelativeError
 from data.timeseries import TimeSeries
-from factory import ModelFactory
+from src.model.factory import ModelFactory
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_model_appliance
 from plotter import plot_comparison

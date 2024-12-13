@@ -32,9 +32,9 @@ config = {
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
 
     # Input
-    "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
-    "masking_portion": 0.2,
-    "window_stride": 1,
+    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
+    "masking_portion": 0.25,
+    "window_stride": 30,
     "add_artificial_activations": False,
     "balance_enabled": False,
 
@@ -45,12 +45,13 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 128,
+    "hidden_size": 256,
     "num_heads": 2,
     "n_layers": 2,
-    "dropout": 0.2,
+    "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
+    "ff_dim": 1024,  # Feed-forward Network: 4x the hidden size is the recommended.
 
     # Deconvolution layer
     "deconv_kernel_size": 4,
@@ -58,8 +59,6 @@ config = {
     "deconv_padding": 1,
     "deconv_activation": "relu",
 
-    # Feed-forward network dimension
-    "ff_dim": 256,
 
     # Dimension (number of features) in the output layer
     "output_size": 1,

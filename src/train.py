@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import wandb
 from nilmtk import DataSet
@@ -5,9 +7,11 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from cmd_line_input import get_args
 from data.timeseries import TimeSeries
-from factory import ModelFactory
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_model_appliance
+from model.factory import ModelFactory
+
+print(sys.path)
 
 # Set GPU memory growth
 set_gpu_memory_growth()
