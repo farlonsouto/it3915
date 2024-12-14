@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from src.custom.loss.bert4nilm import LossFunction
 from src.custom.metric.regression import MeanRelativeError
-from .bert4nilm import MaskedBERT4NILM
+from .bert4nilm import BERT4NILM
 from .seq2p import Seq2PointNILM
 from .seq2seq import Seq2SeqNILM
 
@@ -37,8 +37,8 @@ class ModelFactory:
 
     def __bert4nilm(self):
         # Instantiate the BERT4NILM model
-        # model = BERT4NILM(self.wandb_config)
-        model = MaskedBERT4NILM(self.wandb_config)
+        model = BERT4NILM(self.wandb_config)
+        # model = MaskedBERT4NILM(self.wandb_config)
         return self.__build_compile(model)
 
     def __seq2seq(self):

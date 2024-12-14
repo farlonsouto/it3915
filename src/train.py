@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 import wandb
 from nilmtk import DataSet
@@ -10,8 +8,6 @@ from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_model_appliance
 from model.factory import ModelFactory
-
-print(sys.path)
 
 # Set GPU memory growth
 set_gpu_memory_growth()

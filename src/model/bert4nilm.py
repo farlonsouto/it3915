@@ -1,8 +1,7 @@
 import tensorflow as tf
 from keras import layers, Model
 
-
-# tf.config.run_functions_eagerly(True)  # Forces eager execution in tf.function
+from src.custom.loss.bert4nilm import LossFunction
 
 
 class LearnedL2NormPooling(layers.Layer):
@@ -38,6 +37,7 @@ class BERT4NILM(Model):
     def __init__(self, wandb_config):
         super(BERT4NILM, self).__init__()
 
+        self.loss_function = LossFunction(wandb_config)
         self.mask_positions = None
         self.hyper_param = wandb_config
         self.latent_len = wandb_config.window_size // 2
@@ -76,7 +76,7 @@ class BERT4NILM(Model):
         )
 
         self.output_layer1 = layers.Dense(
-            128,  # So to match the article's implementation of reference
+            128,
             activation='tanh',
             kernel_initializer='truncated_normal',
             kernel_regularizer="l2"
@@ -101,8 +101,8 @@ class BERT4NILM(Model):
         attn_output = self.dropout(attn_output)
         out1 = layers.Add()([inputs, attn_output])
         x = layers.LayerNormalization(epsilon=self.hyper_param.layer_norm_epsilon)(out1)
-        ff_output = layers.Dense(self.hyper_param.ff_dim, activation=self.hyper_param.dense_activation
-                                 , kernel_initializer='truncated_normal',
+        ff_output = layers.Dense(self.hyper_param.ff_dim, activation=self.hyper_param.dense_activation,
+                                 kernel_initializer='truncated_normal',
                                  kernel_regularizer="l2")(x)
         ff_output = layers.Dense(self.hyper_param.hidden_size, kernel_initializer='truncated_normal',
                                  kernel_regularizer="l2")(ff_output)
@@ -110,58 +110,63 @@ class BERT4NILM(Model):
         return Model(inputs, layers.Add()([out1, ff_output]))
 
     def call(self, inputs, training=None, mask=None):
-        # Pass through conv and pooling layers
         x_token = self.pool(self.conv(inputs))
+        # tf.print("After pooling shape:", tf.shape(x_token))
 
         sequence_length = tf.shape(x_token)[1]
         self.latent_len = sequence_length
         positions = tf.range(start=0, limit=self.latent_len, delta=1)
         positional_embedding = self.position(positions)
         embedding = x_token + positional_embedding
+        # tf.print("Embedding shape:", tf.shape(embedding))
 
         if training:
-            # Randomly mask a proportion p of the input
-            mask = tf.random.uniform(shape=tf.shape(embedding)[:2]) < self.hyper_param.masking_portion
-            embedding = tf.where(mask[:, :, tf.newaxis], 0.0, embedding)
-            # Save the mask positions for loss calculation
-            self.mask_positions = tf.cast(mask, tf.float32)  # Save as 1.0 for masked, 0.0 otherwise
+            original_mask = tf.random.uniform(shape=tf.shape(inputs)[:2]) < self.hyper_param.masking_portion
+            original_mask = tf.cast(original_mask[:, :, tf.newaxis], tf.float32)
+            # tf.print("Original mask shape:", tf.shape(original_mask))
+
+            downsampled_mask = tf.nn.avg_pool1d(original_mask, ksize=self.pool.pool_size, strides=self.pool.pool_size,
+                                                padding="SAME")
+            downsampled_mask = tf.cast(downsampled_mask > 0.5, tf.float32)
+            # tf.print("Downsampled mask shape:", tf.shape(downsampled_mask))
+
+            embedding = tf.where(downsampled_mask > 0, 0.0, embedding)
+
+            self.mask_positions = {
+                'original': original_mask,
+                'downsampled': downsampled_mask
+            }
 
         x = self.dropout(embedding, training=training)
 
         for transformer in self.transformer_blocks:
             x = transformer(x, training=training)
 
-        # Deconvolution followed by a Dense layer with Tanh activation
         x = self.deconv(x)
-        x = self.output_layer1(x)  # First linear layer with Tanh activation (matches Eq. 5)
-        pred_appl_power = self.output_layer2(x)  # Second linear layer
+        # tf.print("After deconv shape:", tf.shape(x))
+        x = self.output_layer1(x)
+        pred_appl_power = self.output_layer2(x)
+        # tf.print("Final prediction shape:", tf.shape(pred_appl_power))
 
-        # Multiply by max power and clamp
-        # Apply upper limit of max_power to all values
         pred_appl_power = tf.clip_by_value(pred_appl_power * self.hyper_param.max_power, 1.0,
                                            self.hyper_param.max_power)
 
         return pred_appl_power
 
-
-class MaskedBERT4NILM(BERT4NILM):
     def train_step(self, data):
-        x, y = data  # Unpack the data
+        x, y = data
+        # tf.print("Train step input shape:", tf.shape(x))
+        # tf.print("Train step target shape:", tf.shape(y))
 
         with tf.GradientTape() as tape:
-            # Forward pass
             y_pred = self(x, training=True)
+            # tf.print("Model output shape:", tf.shape(y_pred))
+            loss = self.loss_function.compute(y, y_pred, self.mask_positions, True)
+            # tf.print("Computed loss:", loss)
 
-            # Compute masked loss
-            self.compiled_loss.mask_positions = self.mask_positions
-            self.compiled_loss.is_training = True
-            loss = self.compiled_loss(y, y_pred)
-
-        # Backpropagation and optimizer step
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        # Update metrics
         self.compiled_metrics.update_state(y, y_pred)
 
         return {m.name: m.result() for m in self.metrics}
