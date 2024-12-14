@@ -63,7 +63,6 @@ class ModelFactory:
         # Use bert4nilm_loss from bert_loss.py, and pass any required arguments from wandb_config
         model.compile(
             optimizer=self.optimizer,
-            loss=loss_fn,
             metrics=[
                 MeanRelativeError(name='MRE'),
                 tf.keras.metrics.MeanAbsoluteError(name='MAE'),

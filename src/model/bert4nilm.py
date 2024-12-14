@@ -169,4 +169,7 @@ class BERT4NILM(Model):
 
         self.compiled_metrics.update_state(y, y_pred)
 
-        return {m.name: m.result() for m in self.metrics}
+        metrics = {"loss": loss}
+        metrics.update({m.name: m.result() for m in self.metrics})
+
+        return metrics
