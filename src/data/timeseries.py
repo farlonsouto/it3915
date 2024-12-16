@@ -67,13 +67,9 @@ class TimeSeries:
         }
 
     def getTrainingDataGenerator(self):
-        return TimeSeriesDataGenerator(
-            self.dataset, self.training_buildings, self.appliance, self.normalization_params, self.wandb_config,
-            is_training=True
-        )
+        return TimeSeriesDataGenerator(self.dataset, self.training_buildings, self.appliance, self.normalization_params,
+                                       self.wandb_config, is_training=True)
 
     def getTestDataGenerator(self):
-        return TimeSeriesDataGenerator(
-            self.dataset, self.test_buildings, self.appliance, self.normalization_params, self.wandb_config,
-            is_training=False
-        )
+        return TimeSeriesDataGenerator(self.dataset, self.test_buildings, self.appliance, self.normalization_params,
+                                       self.wandb_config, is_training=False)

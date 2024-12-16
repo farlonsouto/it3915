@@ -23,7 +23,7 @@ config = {
     "max_power": 3200,
 
     # Training
-    "batch_size": 64,
+    "batch_size": 1,
     "epochs": 3,
     "learning_rate": 1e-4,
     "optimizer": "adam",
@@ -34,7 +34,7 @@ config = {
     # Input
     "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
     "masking_portion": 0.25,
-    "window_stride": 30,
+    "window_stride": 10,
     "add_artificial_activations": False,
     "balance_enabled": False,
 
@@ -58,7 +58,6 @@ config = {
     "deconv_strides": 2,
     "deconv_padding": 1,
     "deconv_activation": "relu",
-
 
     # Dimension (number of features) in the output layer
     "output_size": 1,

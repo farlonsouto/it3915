@@ -37,7 +37,7 @@ class ModelFactory:
 
     def __bert4nilm(self):
         # Instantiate the BERT4NILM model
-        model = BERT4NILM(self.wandb_config)
+        model = BERT4NILM(self.wandb_config.max_power, self.wandb_config.window_size)
         # model = MaskedBERT4NILM(self.wandb_config)
         return self.__build_compile(model)
 

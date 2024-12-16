@@ -15,7 +15,7 @@ class TimeSeriesDataGenerator(Sequence):
         and have shapes (window size, 5) and (window size, 1) respectively.
     """
 
-    def __init__(self, dataset, buildings, appliance, normalization_params, wandb_config, is_training=True):
+    def __init__(self, dataset, buildings, appliance, normalization_params, wandb_config, is_training=True, ):
         self.dataset = dataset
         self.buildings = buildings
         self.appliance = appliance
@@ -30,6 +30,7 @@ class TimeSeriesDataGenerator(Sequence):
         self.balance_enabled = wandb_config.balance_enabled
         self.add_artificial_activations = wandb_config.add_artificial_activations
         self.is_training = is_training
+        self.masking_portion = wandb_config.masking_portion
         self.data_generator = self._data_generator()
         self.total_samples = self._count_samples()
 
@@ -83,7 +84,8 @@ class TimeSeriesDataGenerator(Sequence):
                 appliance_power = next(appliance_generator)
 
                 # Performs the pre-processing of the data:
-                mains_power, appliance_power = self._process_data(mains_power, appliance_power, ac_type_aggregated)
+                mains_power, appliance_power = self._process_data(mains_power, appliance_power,
+                                                                  ac_type_aggregated)
 
                 stride = self.window_size
                 if self.is_training:
@@ -121,7 +123,7 @@ class TimeSeriesDataGenerator(Sequence):
         # Align the series
         aggregated, appliance_power = aggregated.align(appliance_power, join='inner', method='pad', limit=1)
 
-        # Mask for values to ignore
+        # mask_observer.py for values to ignore
         mask = appliance_power == 1.0
         # Apply clipping only where the mask is False
         appliance_power = appliance_power.where(mask,
@@ -200,27 +202,27 @@ class TimeSeriesDataGenerator(Sequence):
         Fetches a batch of data using the generator.
         Adjusted to work for Seq2Point by using midpoint targets.
         """
-        batch_X, batch_y = [], []
+        batch_X, batch_y, batch_mask = [], [], []
         for _ in range(self.batch_size):
             try:
                 X, y = next(self.data_generator)
-                # For Seq2Point, use the midpoint of y as the target
                 if self.wandb_config.model == 'seq2p':
                     midpoint = len(y) // 2
                     y = y[midpoint]
-                batch_X.append(X)
-                batch_y.append(y)
-            except StopIteration:
-                # Reset the generator and fetch the next batch
-                self.data_generator = self._data_generator()
-                X, y = next(self.data_generator)
-                if self.wandb_config.model == 'seq2p':
-                    midpoint = len(y) // 2
-                    y = y[midpoint]
+
                 batch_X.append(X)
                 batch_y.append(y)
 
-        # Only reshape batch y for the Seq2Point model
-        # if self.wandb_config.model == 'seq2p':
-        #   return np.array(batch_X), np.array(batch_y).reshape(-1, 1)
+            except StopIteration:
+                # Reset the generator and fetch the next batch
+                self.data_generator = self._data_generator()
+                X, y, mask = next(self.data_generator)
+
+                if self.wandb_config.model == 'seq2p':
+                    midpoint = len(y) // 2
+                    y = y[midpoint]
+
+                batch_X.append(X)
+                batch_y.append(y)
+
         return np.array(batch_X), np.array(batch_y)
