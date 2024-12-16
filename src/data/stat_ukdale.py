@@ -8,10 +8,9 @@ from src import hyper_params
 
 def compute_stats(appliance_list):
     """
-    Computes statistical data (mean, median, std, etc.) for active power, apparent power,
+    Computes statistical data (mean, median, std, min, max, etc.) for active power, apparent power,
     and specified appliances across buildings.
     """
-
     dataset = DataSet('../../datasets/ukdale.h5')
 
     active_power_building = {}
@@ -48,11 +47,12 @@ def compute_stats(appliance_list):
         # Compute stats for active power
         if all_active_power:
             combined_active_power = pd.concat(all_active_power, axis=0)
-
             active_power_building[str(building)] = {
                 "mean": float(combined_active_power.mean()),
                 "median": float(combined_active_power.median()),
                 "std": float(combined_active_power.std()),
+                "min": float(combined_active_power.min()),
+                "max": float(combined_active_power.max()),
                 "Quantiles": str(combined_active_power.quantile([.25, .5, .75]).values)
             }
 
@@ -63,6 +63,8 @@ def compute_stats(appliance_list):
                 "mean": float(combined_apparent_power.mean()),
                 "median": float(combined_apparent_power.median()),
                 "std": float(combined_apparent_power.std()),
+                "min": float(combined_apparent_power.min()),
+                "max": float(combined_apparent_power.max()),
                 "Quantiles": str(combined_apparent_power.quantile([.25, .5, .75]).values)
             }
 
@@ -91,6 +93,8 @@ def compute_stats(appliance_list):
                         "mean": float(combined_appliance_power.mean()),
                         "median": float(combined_appliance_power.median()),
                         "std": float(combined_appliance_power.std()),
+                        "min": float(combined_appliance_power.min()),
+                        "max": float(combined_appliance_power.max()),
                         "Quantiles": str(combined_appliance_power.quantile([.25, .5, .75]).values)
                     }
 
@@ -102,7 +106,9 @@ def compute_stats(appliance_list):
         global_active_power = pd.concat(all_active_power_global, axis=0)
         the_entire_dataset_stats['active_power'] = {
             "mean": float(global_active_power.mean()),
-            "std": float(global_active_power.std())
+            "std": float(global_active_power.std()),
+            "min": float(global_active_power.min()),
+            "max": float(global_active_power.max())
         }
 
     # Apparent Power Global Stats
@@ -110,14 +116,16 @@ def compute_stats(appliance_list):
         global_apparent_power = pd.concat(all_apparent_power_global, axis=0)
         the_entire_dataset_stats['apparent_power'] = {
             "mean": float(global_apparent_power.mean()),
-            "std": float(global_apparent_power.std())
+            "std": float(global_apparent_power.std()),
+            "min": float(global_apparent_power.min()),
+            "max": float(global_apparent_power.max())
         }
 
     # Appliance Global Stats
     the_entire_dataset_stats['appliance_power'] = {}
     for current_appliance, powers in appliance_power_global.items():
         if powers:
-            config = hyper_params.for_model_appliance(current_appliance)
+            config = hyper_params.for_model_appliance("bert", current_appliance)
             on_threshold = config["on_threshold"]
             min_on_duration = config["min_on_duration"]
             global_appliance_power = pd.concat(powers, axis=0)
@@ -126,6 +134,8 @@ def compute_stats(appliance_list):
             the_entire_dataset_stats['appliance_power'][current_appliance] = {
                 "mean": float(global_appliance_power.mean()),
                 "std": float(global_appliance_power.std()),
+                "min": float(global_appliance_power.min()),
+                "max": float(global_appliance_power.max()),
                 "ON_mean": float(
                     global_appliance_power[global_appliance_power > on_threshold].mean()),
                 "ON_std": float(
