@@ -25,7 +25,7 @@ wandb.init(
 wandb_config = wandb.config
 
 try:
-    nn_model = tf.keras.models.load_model('../models/}_model'.format(model_name))
+    nn_model = tf.keras.models.load_model('../models/{}_model'.format(model_name))
 except Exception as e:
     print("""Error loading the model: """, e)
     print("Trying to rebuild the model and load weights...")

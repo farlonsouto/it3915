@@ -87,6 +87,6 @@ class Seq2PointNILM(Model):
         pred_appl_power = self.dense2(x)
 
         # Scale and clip predictions
-        pred_appl_power = tf.clip_by_value(pred_appl_power * self.hyper_param.max_power, 1.0,
-                                           self.hyper_param.max_power)
+        pred_appl_power = tf.clip_by_value(pred_appl_power * self.hyper_param.appliance_max_power, 1.0,
+                                           self.hyper_param.appliance_max_power)
         return pred_appl_power

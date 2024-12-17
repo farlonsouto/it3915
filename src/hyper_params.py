@@ -23,9 +23,9 @@ config = {
     "max_power": 3200,
 
     # Training
-    "batch_size": 1,
+    "batch_size": 80,
     "epochs": 3,
-    "learning_rate": 1e-4,
+    "learning_rate": 5e-5,
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
     "lambda_val": 1.0,  # inside the loss function
@@ -37,6 +37,10 @@ config = {
     "window_stride": 10,
     "add_artificial_activations": False,
     "balance_enabled": False,
+    "normalize_aggregated": True,  # between 0 and 1
+    "normalize_appliance": False,  # between 0 and 1
+    "standardize_aggregated": False,  # Uses mean and std: x = (x - x_mean) / x_std
+    "standardize_appliance": False,  # Uses mean and std: y = (y - y_mean) / y_std
 
     # 1D Convolution layer
     "conv_kernel_size": 5,
@@ -73,7 +77,7 @@ def for_model_appliance(model_name, appliance_name) -> dict:
     if appliance_name == "kettle":
         config.update({
             "lambda_val": 1.0,
-            "max_power": 3200,
+            "appliance_max_power": 3200,
             "on_threshold": 2000,
             "min_on_duration": 0,
             "min_off_duration": 12,
@@ -89,7 +93,7 @@ def for_model_appliance(model_name, appliance_name) -> dict:
     elif appliance_name == "washer":
         config.update({
             "lambda_val": 1e-2,
-            "max_power": 2500,
+            "appliance_max_power": 2500,
             "on_threshold": 20,
             "min_on_duration": 1800,
             "min_off_duration": 160,
@@ -97,7 +101,7 @@ def for_model_appliance(model_name, appliance_name) -> dict:
     elif appliance_name == "microwave":
         config.update({
             "lambda_val": 1.0,
-            "max_power": 3000,
+            "appliance_max_power": 3000,
             "on_threshold": 200,
             "min_on_duration": 12,
             "min_off_duration": 30,
@@ -105,7 +109,7 @@ def for_model_appliance(model_name, appliance_name) -> dict:
     elif appliance_name == "dish washer":
         config.update({
             "lambda_val": 1.0,
-            "max_power": 2500,
+            "appliance_max_power": 2500,
             "on_threshold": 10,
             "min_on_duration": 1800,
             "min_off_duration": 1800,

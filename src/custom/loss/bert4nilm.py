@@ -7,7 +7,7 @@ class LossFunction():
     Transformer Model for Non-Intrusive Load Monitoring, Zhenrui Yue et. al"""
 
     def __init__(self, wandb_config, reduction=losses_utils.ReductionV2.AUTO, name="bert4nilm_loss"):
-        self.max_power = wandb_config.max_power
+        self.max_power = wandb_config.appliance_max_power
         self.lambda_val = wandb_config.lambda_val
 
     def compute(self, app_pw_grd_truth, app_pw_predicted, mask):  # Added mask parameter

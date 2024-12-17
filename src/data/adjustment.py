@@ -8,7 +8,7 @@ class Augment:
         self.on_threshold = wandb_config.on_threshold
         self.appliance_name = wandb_config.appliance
         self.min_on_duration = wandb_config.min_on_duration
-        self.max_power = wandb_config.max_power
+        self.max_power = wandb_config.appliance_max_power
         self.normalization_params = normalization_params
 
     def with_artificial_activations(self, aggregated, appliance_power):

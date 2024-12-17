@@ -22,7 +22,7 @@ class TimeSeriesDataGenerator(Sequence):
         self.normalization_params = normalization_params
         self.window_size = wandb_config.window_size
         self.batch_size = wandb_config.batch_size
-        self.max_power = wandb_config.max_power
+        self.max_power = wandb_config.appliance_max_power
         self.on_threshold = wandb_config.on_threshold
         self.min_on_duration = wandb_config.min_on_duration
         self.window_stride = wandb_config.window_stride
@@ -129,6 +129,7 @@ class TimeSeriesDataGenerator(Sequence):
         appliance_power = appliance_power.where(mask,
                                                 appliance_power.clip(lower=self.on_threshold, upper=self.max_power))
 
+        # Any data modification or adjustment should take place before the normalization
         if self.appliance in ['kettle', 'microwave', 'dish washer', 'washer']:
             # Handling the least used appliances: rarely ON and, when ON, for short periods.
             augment = Augment(self.wandb_config, self.normalization_params)
@@ -138,7 +139,23 @@ class TimeSeriesDataGenerator(Sequence):
             if self.balance_enabled:
                 aggregated, appliance_power = balance.on_off_periods(aggregated, appliance_power)
 
-            # Drops the DatetimeIndex: The indexed series turn into a numpy array
+        if self.wandb_config.normalize_aggregated:
+            aggregated = (aggregated - aggregated.min()) / (aggregated.max() - aggregated.min())
+        if self.wandb_config.normalize_appliance:
+            appliance_power = (appliance_power - appliance_power.min()) / (
+                    appliance_power.max() - appliance_power.min())
+        if self.wandb_config.standardize_aggregated:
+            # Standardize the aggregated data based on the normalization params:
+            mean = self.normalization_params['aggregated'][ac_type_aggregated]['mean']
+            std = self.normalization_params['aggregated'][ac_type_aggregated]['std']
+            aggregated = (aggregated - mean) / std
+        if self.wandb_config.standardize_appliance:
+            # Standardize the appliance data based on the normalization params:
+            mean = self.normalization_params['appliance'][self.appliance]['mean']
+            std = self.normalization_params['appliance'][self.appliance]['std']
+            appliance_power = (appliance_power - mean) / std
+
+        # Drops the DatetimeIndex: The indexed series turn into a numpy ndarray
         appliance_power = appliance_power.values.reshape(-1, 1)
         aggregated = aggregated.values.reshape(-1, 1)
 

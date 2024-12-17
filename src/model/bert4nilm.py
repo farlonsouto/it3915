@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
 from tensorflow.keras import layers, Model
 
 
@@ -59,10 +58,13 @@ class TransformerBlock(layers.Layer):
 
 
 class BERT4NILM(Model):
-    def __init__(self, max_power, window_size, hidden_size=256, num_layers=2, num_heads=2, ff_dim=512,
+    def __init__(self, appliance_max_power, window_size, hidden_size=256, num_layers=2, num_heads=2, ff_dim=1024,
                  dropout_rate=0.1):
         super(BERT4NILM, self).__init__()
-        self.max_power = max_power
+
+        self.MASK = -1.0
+
+        self.appliance_max_power = appliance_max_power
         self.window_size = window_size
         self.hidden_size = hidden_size
 
@@ -75,10 +77,15 @@ class BERT4NILM(Model):
 
         self.deconv = layers.Conv1DTranspose(filters=hidden_size, kernel_size=4, strides=2, padding='same',
                                              activation='relu')
-        self.output_layer1 = layers.Dense(128, activation='tanh')
+        self.output_layer1 = layers.Dense(ff_dim, activation='tanh')
         self.output_layer2 = layers.Dense(1)
 
-    def call(self, inputs, training=True):
+    def call(self, inputs, training=True, mask=None):
+
+        # Ensure inputs have 3 dimensions: [batch_size, seq_len, num_features]
+        if len(inputs.shape) == 2:
+            inputs = tf.expand_dims(inputs, axis=-1)  # Add a channel dimension
+
         x = self.conv(inputs)
         x = self.pool(x)
         x += self.pos_embedding
@@ -90,14 +97,19 @@ class BERT4NILM(Model):
         x = self.output_layer1(x)
         x = self.output_layer2(x)
 
-        return tf.clip_by_value(x * self.max_power, 0, self.max_power)
+        x = x * self.appliance_max_power
+        return tf.clip_by_value(x, 1, self.appliance_max_power)
 
     def train_step(self, data):
         x, y = data
 
+        # Ensure x and y have the correct shape
+        # x = tf.squeeze(x, axis=-1)
+        # y = tf.squeeze(y, axis=-1)
+
         # Apply masking
         mask = tf.random.uniform(shape=tf.shape(x)) < 0.25
-        x_masked = tf.where(mask, -1.0, x)
+        x_masked = tf.where(mask, self.MASK, x)
 
         with tf.GradientTape() as tape:
             y_pred = self(x_masked, training=True)
@@ -106,25 +118,54 @@ class BERT4NILM(Model):
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        return {"loss": loss}
+        # Update and log metrics
+        self.compiled_metrics.update_state(y, y_pred)
+        metrics = {m.name: m.result() for m in self.metrics}
+        metrics['loss'] = loss
+
+        return metrics
 
     def compute_loss(self, y_true, y_pred, mask):
-        # MSE
-        mse = tf.reduce_mean(tf.square(y_pred - y_true))
+        """
+        Compute loss over masked positions only.
+
+        Args:
+            y_true: Ground truth tensor, shape [batch_size, seq_len, 1].
+            y_pred: Predicted tensor, shape [batch_size, seq_len, 1].
+            mask: Mask tensor, shape [batch_size, seq_len, 1].
+
+        Returns:
+            Total loss.
+        """
+        # Ensure all tensors are aligned
+        mask = tf.squeeze(mask, axis=-1)  # [batch_size, seq_len]
+        y_true = tf.squeeze(y_true, axis=-1)  # [batch_size, seq_len]
+        y_pred = tf.squeeze(y_pred, axis=-1)  # [batch_size, seq_len]
+
+        # Apply the mask to extract relevant values
+        y_true_masked = tf.boolean_mask(y_true, mask)  # [num_masked_positions]
+        y_pred_masked = tf.boolean_mask(y_pred, mask)  # [num_masked_positions]
+
+        # Compute Mean Squared Error
+        mse_loss = tf.reduce_mean(tf.square(y_pred_masked - y_true_masked))
 
         # KL Divergence
-        y_true_dist = tfp.distributions.Normal(y_true, scale=1.0)
-        y_pred_dist = tfp.distributions.Normal(y_pred, scale=1.0)
-        kl_div = tf.reduce_mean(tfp.distributions.kl_divergence(y_true_dist, y_pred_dist))
+        kl_div = tf.reduce_mean(
+            0.5 * (
+                    tf.square(y_pred_masked - y_true_masked)
+                    - 1
+                    + tf.math.log(1e-8 + tf.exp(1 - tf.square(y_pred_masked - y_true_masked)))
+            )
+        )
 
         # Soft-margin loss
-        status_true = tf.cast(y_true > 0, tf.float32)
-        status_pred = tf.cast(y_pred > 0, tf.float32)
+        status_true = tf.cast(y_true_masked > 0, tf.float32)
+        status_pred = tf.cast(y_pred_masked > 0, tf.float32)
         soft_margin = tf.reduce_mean(tf.nn.softplus(-status_true * status_pred))
 
-        # L1 loss (only for on-state or misclassified)
-        l1_mask = tf.logical_or(status_true > 0, tf.not_equal(status_true, status_pred))
-        l1 = tf.reduce_mean(tf.abs(y_pred - y_true) * tf.cast(l1_mask, tf.float32))
+        # L1 loss
+        l1_loss = tf.reduce_mean(tf.abs(y_pred_masked - y_true_masked))
 
         # Combine losses
-        return mse + 0.1 * kl_div + soft_margin + 0.001 * l1
+        total_loss = mse_loss + 0.1 * kl_div + soft_margin + 0.001 * l1_loss
+        return total_loss
