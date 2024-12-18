@@ -37,8 +37,8 @@ class ModelFactory:
 
     def __bert4nilm(self):
         # Instantiate the BERT4NILM model
-        model = BERT4NILM(self.wandb_config.appliance_max_power, self.wandb_config.window_size)
-        # model = MaskedBERT4NILM(self.wandb_config)
+        model = BERT4NILM(self.wandb_config.appliance_max_power, self.wandb_config.window_size, self.wandb_config,
+                          ff_dim=self.wandb_config.ff_dim)
         return self.__build_compile(model)
 
     def __seq2seq(self):

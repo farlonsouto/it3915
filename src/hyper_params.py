@@ -23,7 +23,7 @@ config = {
     "max_power": 3200,
 
     # Training
-    "batch_size": 80,
+    "batch_size": 128,
     "epochs": 3,
     "learning_rate": 5e-5,
     "optimizer": "adam",
@@ -32,12 +32,13 @@ config = {
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
 
     # Input
-    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
+    "mlm_mask": False,  # MLM masking for BERT
     "masking_portion": 0.25,
     "window_stride": 10,
     "add_artificial_activations": False,
     "balance_enabled": False,
-    "normalize_aggregated": True,  # between 0 and 1
+    "normalize_aggregated": False,  # between 0 and 1
     "normalize_appliance": False,  # between 0 and 1
     "standardize_aggregated": False,  # Uses mean and std: x = (x - x_mean) / x_std
     "standardize_appliance": False,  # Uses mean and std: y = (y - y_mean) / y_std
@@ -55,7 +56,7 @@ config = {
     "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
-    "ff_dim": 1024,  # Feed-forward Network: 4x the hidden size is the recommended.
+    "ff_dim": 512,  # Feed-forward Network: 4x the hidden size is the recommended.
 
     # Deconvolution layer
     "deconv_kernel_size": 4,
@@ -85,7 +86,7 @@ def for_model_appliance(model_name, appliance_name) -> dict:
     elif appliance_name == "fridge":
         config.update({
             "lambda_val": 1e-6,
-            "max_power": 400,
+            "appliance_max_power": 400,
             "on_threshold": 50,
             "min_on_duration": 60,
             "min_off_duration": 12,

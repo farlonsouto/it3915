@@ -58,10 +58,12 @@ class TransformerBlock(layers.Layer):
 
 
 class BERT4NILM(Model):
-    def __init__(self, appliance_max_power, window_size, hidden_size=256, num_layers=2, num_heads=2, ff_dim=1024,
+    def __init__(self, appliance_max_power, window_size, wandb_config, hidden_size=256, num_layers=2, num_heads=2,
+                 ff_dim=1024,
                  dropout_rate=0.1):
         super(BERT4NILM, self).__init__()
 
+        self.wandb_config = wandb_config
         self.MASK = -1.0
 
         self.appliance_max_power = appliance_max_power
@@ -107,9 +109,12 @@ class BERT4NILM(Model):
         # x = tf.squeeze(x, axis=-1)
         # y = tf.squeeze(y, axis=-1)
 
-        # Apply masking
-        mask = tf.random.uniform(shape=tf.shape(x)) < 0.25
-        x_masked = tf.where(mask, self.MASK, x)
+        # Apply masking if masking is enabled
+        x_masked = x
+        mask = tf.ones_like(x, dtype=tf.bool)
+        if self.wandb_config.mlm_mask:
+            mask = tf.random.uniform(shape=tf.shape(x)) < self.wandb_config.masking_portion
+            x_masked = tf.where(mask, self.MASK, x)
 
         with tf.GradientTape() as tape:
             y_pred = self(x_masked, training=True)
