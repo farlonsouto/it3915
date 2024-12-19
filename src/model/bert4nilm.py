@@ -59,118 +59,114 @@ class TransformerBlock(layers.Layer):
 
 class BERT4NILM(Model):
     def __init__(self, appliance_max_power, window_size, wandb_config, hidden_size=256, num_layers=2, num_heads=2,
-                 ff_dim=1024,
-                 dropout_rate=0.1):
+                 ff_dim=1024, dropout_rate=0.1):
         super(BERT4NILM, self).__init__()
 
         self.wandb_config = wandb_config
-        self.MASK = -1.0
+        # Use a small negative value instead of extreme -1000
+        self.MASK = 0.0  # Changed to 0 since we'll use attention masking
 
         self.appliance_max_power = appliance_max_power
         self.window_size = window_size
         self.hidden_size = hidden_size
 
-        self.conv = layers.Conv1D(filters=hidden_size, kernel_size=5, strides=1, padding='same', activation='relu')
-        self.pool = LearnedL2NormPooling(pool_size=2)
-        self.pos_embedding = self.add_weight("pos_embedding", shape=(1, window_size // 2, hidden_size))
+        # Input embedding layers
+        self.embedding = layers.Dense(hidden_size)
+        self.pos_embedding = self.add_weight("pos_embedding", shape=(1, window_size, hidden_size))
 
-        self.transformer_blocks = [TransformerBlock(hidden_size, num_heads, ff_dim, dropout_rate) for _ in
-                                   range(num_layers)]
+        # Transformer blocks
+        self.transformer_blocks = [
+            TransformerBlock(hidden_size, num_heads, ff_dim, dropout_rate)
+            for _ in range(num_layers)
+        ]
 
-        self.deconv = layers.Conv1DTranspose(filters=hidden_size, kernel_size=4, strides=2, padding='same',
-                                             activation='relu')
-        self.output_layer1 = layers.Dense(ff_dim, activation='tanh')
-        self.output_layer2 = layers.Dense(1)
+        # Output layers
+        self.layer_norm = layers.LayerNormalization(epsilon=1e-6)
+        self.output_dense = layers.Dense(1)
+
+    def create_padding_mask(self, mask):
+        """Create attention padding mask"""
+        return tf.cast(tf.math.not_equal(mask, self.MASK), tf.float32)[:, tf.newaxis, tf.newaxis, :]
 
     def call(self, inputs, training=True, mask=None):
+        # Input shape: [batch_size, seq_len, features]
+        x = self.embedding(inputs)
 
-        # Ensure inputs have 3 dimensions: [batch_size, seq_len, num_features]
-        if len(inputs.shape) == 2:
-            inputs = tf.expand_dims(inputs, axis=-1)  # Add a channel dimension
+        # Add positional encoding
+        x = x + self.pos_embedding
 
-        x = self.conv(inputs)
-        x = self.pool(x)
-        x += self.pos_embedding
+        # Apply transformer blocks with attention masking
+        attention_mask = None
+        if mask is not None:
+            attention_mask = self.create_padding_mask(mask)
 
         for transformer in self.transformer_blocks:
-            x = transformer(x, training=training)
+            x = transformer(x, training=training, mask=attention_mask)
 
-        x = self.deconv(x)
-        x = self.output_layer1(x)
-        x = self.output_layer2(x)
+        x = self.layer_norm(x)
+        outputs = self.output_dense(x)
 
-        x = x * self.appliance_max_power
-        return tf.clip_by_value(x, 1, self.appliance_max_power)
+        # Scale back to original power values
+        return tf.clip_by_value(outputs * self.appliance_max_power, 0, self.appliance_max_power)
 
     def train_step(self, data):
         x, y = data
 
-        # Ensure x and y have the correct shape
-        # x = tf.squeeze(x, axis=-1)
-        # y = tf.squeeze(y, axis=-1)
-
-        # Apply masking if masking is enabled
-        x_masked = x
-        mask = tf.ones_like(x, dtype=tf.bool)
-        if self.wandb_config.mlm_mask:
-            mask = tf.random.uniform(shape=tf.shape(x)) < self.wandb_config.masking_portion
-            x_masked = tf.where(mask, self.MASK, x)
+        # Create masking pattern
+        # Instead of random masking, use structured masking
+        mask = self.create_structured_mask(x)
+        x_masked = tf.where(mask, self.MASK, x)
 
         with tf.GradientTape() as tape:
-            y_pred = self(x_masked, training=True)
+            y_pred = self(x_masked, training=True, mask=mask)
             loss = self.compute_loss(y, y_pred, mask)
 
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        # Update and log metrics
         self.compiled_metrics.update_state(y, y_pred)
-        metrics = {m.name: m.result() for m in self.metrics}
-        metrics['loss'] = loss
+        return {m.name: m.result() for m in self.metrics}
 
-        return metrics
+    def create_structured_mask(self, x):
+        """Create structured masking pattern for time series"""
+        batch_size = tf.shape(x)[0]
+        seq_len = tf.shape(x)[1]
+
+        # Create spans of masked values instead of random points
+        mask_len = tf.random.uniform([], minval=1, maxval=5, dtype=tf.int32)
+        num_masks = tf.cast(seq_len * self.wandb_config.masking_portion / tf.cast(mask_len, tf.float32), tf.int32)
+
+        mask = tf.zeros((batch_size, seq_len))
+
+        for i in range(batch_size):
+            # Generate random starting points for masks
+            start_points = tf.random.uniform([num_masks], 0, seq_len - mask_len, dtype=tf.int32)
+
+            for start in start_points:
+                end = tf.minimum(start + mask_len, seq_len)
+                indices = tf.range(start, end)
+                updates = tf.ones([end - start])
+                mask = tf.tensor_scatter_nd_update(
+                    mask,
+                    tf.stack([tf.ones_like(indices) * i, indices], axis=1),
+                    updates
+                )
+
+        return tf.cast(mask, tf.bool)
 
     def compute_loss(self, y_true, y_pred, mask):
-        """
-        Compute loss over masked positions only.
+        """Compute masked loss"""
+        # Only compute loss on masked positions
+        mask_float = tf.cast(mask, tf.float32)
 
-        Args:
-            y_true: Ground truth tensor, shape [batch_size, seq_len, 1].
-            y_pred: Predicted tensor, shape [batch_size, seq_len, 1].
-            mask: Mask tensor, shape [batch_size, seq_len, 1].
-
-        Returns:
-            Total loss.
-        """
-        # Ensure all tensors are aligned
-        mask = tf.squeeze(mask, axis=-1)  # [batch_size, seq_len]
-        y_true = tf.squeeze(y_true, axis=-1)  # [batch_size, seq_len]
-        y_pred = tf.squeeze(y_pred, axis=-1)  # [batch_size, seq_len]
-
-        # Apply the mask to extract relevant values
-        y_true_masked = tf.boolean_mask(y_true, mask)  # [num_masked_positions]
-        y_pred_masked = tf.boolean_mask(y_pred, mask)  # [num_masked_positions]
-
-        # Compute Mean Squared Error
-        mse_loss = tf.reduce_mean(tf.square(y_pred_masked - y_true_masked))
-
-        # KL Divergence
-        kl_div = tf.reduce_mean(
-            0.5 * (
-                    tf.square(y_pred_masked - y_true_masked)
-                    - 1
-                    + tf.math.log(1e-8 + tf.exp(1 - tf.square(y_pred_masked - y_true_masked)))
-            )
+        # MSE loss on masked positions
+        mse = tf.reduce_mean(
+            mask_float * tf.square(y_true - y_pred)
         )
 
-        # Soft-margin loss
-        status_true = tf.cast(y_true_masked > 0, tf.float32)
-        status_pred = tf.cast(y_pred_masked > 0, tf.float32)
-        soft_margin = tf.reduce_mean(tf.nn.softplus(-status_true * status_pred))
+        # Add regularization term for temporal consistency
+        temp_consistency = tf.reduce_mean(
+            tf.square(y_pred[:, 1:] - y_pred[:, :-1])
+        )
 
-        # L1 loss
-        l1_loss = tf.reduce_mean(tf.abs(y_pred_masked - y_true_masked))
-
-        # Combine losses
-        total_loss = mse_loss + 0.1 * kl_div + soft_margin + 0.001 * l1_loss
-        return total_loss
+        return mse + 0.1 * temp_consistency
