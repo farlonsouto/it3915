@@ -23,25 +23,25 @@ config = {
     "max_power": 3200,
 
     # Training
-    "batch_size": 128,
+    "batch_size": 32,
     "epochs": 3,
-    "learning_rate": 5e-5,
+    "learning_rate": 1e-4,
     "optimizer": "adam",
-    "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
+    "loss": "huber",  # "mse" or "huber" seems to make no difference
     "lambda_val": 1.0,  # inside the loss function
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
 
     # Input
-    "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
-    "mlm_mask": False,  # MLM masking for BERT
+    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
+    "mlm_mask": True,  # MLM masking for BERT
     "masking_portion": 0.25,
-    "window_stride": 10,
+    "window_stride": 60,
     "add_artificial_activations": False,
     "balance_enabled": False,
-    "normalize_aggregated": False,  # between 0 and 1
-    "normalize_appliance": False,  # between 0 and 1
-    "standardize_aggregated": False,  # Uses mean and std: x = (x - x_mean) / x_std
-    "standardize_appliance": False,  # Uses mean and std: y = (y - y_mean) / y_std
+    "normalize_aggregated": False,  # min-max, squeezes between 0 and 1
+    "normalize_appliance": False,  # min-max, squeezes between 0 and 1
+    "standardize_aggregated": False,  # z-score, Uses mean and std: x = (x - x_mean) / x_std
+    "standardize_appliance": False,  # z-score, Uses mean and std: y = (y - y_mean) / y_std
 
     # 1D Convolution layer
     "conv_kernel_size": 5,
@@ -50,9 +50,9 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 256,
+    "hidden_size": 256,  # It is also the hidden size of the LSTMs in the seq2seq
     "num_heads": 2,
-    "n_layers": 2,
+    "n_layers": 3,
     "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU

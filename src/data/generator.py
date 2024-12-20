@@ -33,6 +33,13 @@ class TimeSeriesDataGenerator(Sequence):
         self.masking_portion = wandb_config.masking_portion
         self.data_generator = self._data_generator()
         self.total_samples = self._count_samples()
+        self.clip_value = {
+            'kettle': 16,  # Captures max power of 3200W
+            'fridge': 7,  # Captures max power of 400W
+            'microwave': 28,  # Captures max power of 3000W
+            'dish washer': 11  # Captures max power of 2500W
+        }
+        self.aggregated_clip_value = 13
 
     def _data_generator(self):
         """
@@ -139,21 +146,39 @@ class TimeSeriesDataGenerator(Sequence):
             if self.balance_enabled:
                 aggregated, appliance_power = balance.on_off_periods(aggregated, appliance_power)
 
-        if self.wandb_config.normalize_aggregated:
-            aggregated = (aggregated - aggregated.min()) / (aggregated.max() - aggregated.min())
-        if self.wandb_config.normalize_appliance:
-            appliance_power = (appliance_power - appliance_power.min()) / (
-                    appliance_power.max() - appliance_power.min())
+        # 1. First standardize the data
+        # Extracted values for better readability
         if self.wandb_config.standardize_aggregated:
-            # Standardize the aggregated data based on the normalization params:
-            mean = self.normalization_params['aggregated'][ac_type_aggregated]['mean']
-            std = self.normalization_params['aggregated'][ac_type_aggregated]['std']
-            aggregated = (aggregated - mean) / std
+            aggregated_mean = self.normalization_params['aggregated'][ac_type_aggregated]['mean']
+            aggregated_std = self.normalization_params['aggregated'][ac_type_aggregated]['std']
+            aggregated = (aggregated - aggregated_mean) / aggregated_std
+            # 2. Then clip outliers
+            aggregated = aggregated.clip(-self.aggregated_clip_value, self.aggregated_clip_value)
+
         if self.wandb_config.standardize_appliance:
-            # Standardize the appliance data based on the normalization params:
-            mean = self.normalization_params['appliance'][self.appliance]['mean']
-            std = self.normalization_params['appliance'][self.appliance]['std']
-            appliance_power = (appliance_power - mean) / std
+            appliance_mean = self.normalization_params['appliance'][self.appliance]['mean']
+            appliance_std = self.normalization_params['appliance'][self.appliance]['std']
+            appliance_power = (appliance_power - appliance_mean) / appliance_std
+            # 2. Then clip outliers
+            clip_value = self.clip_value[self.appliance]
+            appliance_power = appliance_power.clip(-clip_value, clip_value)
+
+        # 3. Finally scale to [0,1] range
+        if self.wandb_config.normalize_aggregated:
+            if self.wandb_config.standardize_aggregated:
+                aggregated = (aggregated + self.aggregated_clip_value) / (2 * self.aggregated_clip_value)
+            else:
+                aggregated_min = self.normalization_params["aggregated"][ac_type_aggregated]['min']
+                aggregated_max = self.normalization_params["aggregated"][ac_type_aggregated]['max']
+                aggregated = (aggregated - aggregated_min) / (aggregated_max - aggregated_min)
+        if self.wandb_config.normalize_appliance:
+            if self.wandb_config.standardize_appliance:
+                clip_value = self.clip_value[self.appliance]
+                appliance_power = (appliance_power + clip_value) / (2 * clip_value)
+            else:
+                appl_min = self.normalization_params["appliance"][self.appliance]['min']
+                appl_max = self.normalization_params["appliance"][self.appliance]['max']
+                appliance_power = (appliance_power - appl_min) / (appl_max - appl_min)
 
         # Drops the DatetimeIndex: The indexed series turn into a numpy ndarray
         appliance_power = appliance_power.values.reshape(-1, 1)

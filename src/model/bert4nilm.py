@@ -2,39 +2,13 @@ import tensorflow as tf
 from tensorflow.keras import layers, Model
 
 
-class LearnedL2NormPooling(layers.Layer):
-    def __init__(self, pool_size=2, epsilon=1e-6, **kwargs):
-        super(LearnedL2NormPooling, self).__init__(**kwargs)
-        self.pool_size = pool_size
-        self.epsilon = epsilon
-
-    def build(self, input_shape):
-        self.weight = self.add_weight(
-            name='l2_norm_weight',
-            shape=(1, 1, input_shape[-1]),
-            initializer='ones',
-            trainable=True
-        )
-
-    def call(self, inputs):
-        squared_inputs = tf.square(inputs)
-        pooled = tf.nn.avg_pool1d(
-            squared_inputs,
-            ksize=self.pool_size,
-            strides=self.pool_size,
-            padding='SAME'
-        )
-        weighted_pooled = pooled * self.weight
-        return tf.sqrt(weighted_pooled + self.epsilon)
-
-
-class PFFN(layers.Layer):
+class PositionWiseFFN(layers.Layer):
     def __init__(self, hidden_size, ff_dim, **kwargs):
-        super(PFFN, self).__init__(**kwargs)
+        super(PositionWiseFFN, self).__init__(**kwargs)
         self.dense1 = layers.Dense(ff_dim, activation='gelu')
         self.dense2 = layers.Dense(hidden_size)
 
-    def call(self, x):
+    def call(self, x, **kwargs):
         return self.dense2(self.dense1(x))
 
 
@@ -42,14 +16,20 @@ class TransformerBlock(layers.Layer):
     def __init__(self, hidden_size, num_heads, ff_dim, dropout_rate=0.1, **kwargs):
         super(TransformerBlock, self).__init__(**kwargs)
         self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=hidden_size)
-        self.ffn = PFFN(hidden_size, ff_dim)
+        self.ffn = PositionWiseFFN(hidden_size, ff_dim)
         self.layernorm1 = layers.LayerNormalization(epsilon=1e-6)
         self.layernorm2 = layers.LayerNormalization(epsilon=1e-6)
         self.dropout1 = layers.Dropout(dropout_rate)
         self.dropout2 = layers.Dropout(dropout_rate)
 
-    def call(self, inputs, training):
-        attn_output = self.att(inputs, inputs)
+    def call(self, inputs, training=True, mask=None):
+        # Pass the attention mask to MultiHeadAttention
+        attn_output = self.att(
+            query=inputs,
+            value=inputs,
+            key=inputs,
+            attention_mask=mask
+        )
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(inputs + attn_output)
         ffn_output = self.ffn(out1)
@@ -63,9 +43,6 @@ class BERT4NILM(Model):
         super(BERT4NILM, self).__init__()
 
         self.wandb_config = wandb_config
-        # Use a small negative value instead of extreme -1000
-        self.MASK = 0.0  # Changed to 0 since we'll use attention masking
-
         self.appliance_max_power = appliance_max_power
         self.window_size = window_size
         self.hidden_size = hidden_size
@@ -86,7 +63,7 @@ class BERT4NILM(Model):
 
     def create_padding_mask(self, mask):
         """Create attention padding mask"""
-        return tf.cast(tf.math.not_equal(mask, self.MASK), tf.float32)[:, tf.newaxis, tf.newaxis, :]
+        return tf.cast(mask, tf.float32)[:, tf.newaxis, tf.newaxis, :]
 
     def call(self, inputs, training=True, mask=None):
         # Input shape: [batch_size, seq_len, features]
@@ -107,15 +84,19 @@ class BERT4NILM(Model):
         outputs = self.output_dense(x)
 
         # Scale back to original power values
-        return tf.clip_by_value(outputs * self.appliance_max_power, 0, self.appliance_max_power)
+        return tf.clip_by_value(outputs * self.appliance_max_power, 1.0, self.appliance_max_power)
 
     def train_step(self, data):
         x, y = data
 
         # Create masking pattern
-        # Instead of random masking, use structured masking
-        mask = self.create_structured_mask(x)
-        x_masked = tf.where(mask, self.MASK, x)
+        mask = self.create_structured_mask(x)  # Shape: [batch_size, seq_len]
+
+        # Expand mask dimensions to match input shape
+        mask_expanded = tf.expand_dims(mask, axis=-1)  # Shape: [batch_size, seq_len, 1]
+
+        # Apply masking
+        x_masked = tf.where(mask_expanded, tf.zeros_like(x), x)
 
         with tf.GradientTape() as tape:
             y_pred = self(x_masked, training=True, mask=mask)
@@ -134,30 +115,55 @@ class BERT4NILM(Model):
 
         # Create spans of masked values instead of random points
         mask_len = tf.random.uniform([], minval=1, maxval=5, dtype=tf.int32)
-        num_masks = tf.cast(seq_len * self.wandb_config.masking_portion / tf.cast(mask_len, tf.float32), tf.int32)
 
+        # Convert everything to float32 for the calculation, then back to int32
+        seq_len_float = tf.cast(seq_len, tf.float32)
+        mask_len_float = tf.cast(mask_len, tf.float32)
+
+        # Calculate number of masks needed to achieve desired masking portion
+        num_masks = tf.cast(
+            seq_len_float * self.wandb_config.masking_portion / mask_len_float,
+            tf.int32
+        )
+
+        # Initialize mask tensor
         mask = tf.zeros((batch_size, seq_len))
 
-        for i in range(batch_size):
-            # Generate random starting points for masks
-            start_points = tf.random.uniform([num_masks], 0, seq_len - mask_len, dtype=tf.int32)
+        # Generate random starting points for all batches at once
+        start_points = tf.random.uniform(
+            [batch_size, num_masks],
+            minval=0,
+            maxval=seq_len - mask_len,
+            dtype=tf.int32
+        )
 
-            for start in start_points:
-                end = tf.minimum(start + mask_len, seq_len)
-                indices = tf.range(start, end)
-                updates = tf.ones([end - start])
-                mask = tf.tensor_scatter_nd_update(
-                    mask,
-                    tf.stack([tf.ones_like(indices) * i, indices], axis=1),
-                    updates
-                )
+        # Create indices for batch dimension
+        batch_indices = tf.range(batch_size)[:, tf.newaxis, tf.newaxis]
+        batch_indices = tf.tile(batch_indices, [1, num_masks, mask_len])
+
+        # Create mask_len sequences for each start point
+        offsets = tf.range(mask_len)[tf.newaxis, tf.newaxis, :]
+        seq_indices = start_points[..., tf.newaxis] + offsets
+
+        # Combine indices
+        indices = tf.stack([
+            tf.reshape(batch_indices, [-1]),
+            tf.reshape(seq_indices, [-1])
+        ], axis=1)
+
+        # Create updates
+        updates = tf.ones([batch_size * num_masks * mask_len])
+
+        # Update mask using scatter
+        mask = tf.tensor_scatter_nd_update(mask, indices, updates)
 
         return tf.cast(mask, tf.bool)
 
     def compute_loss(self, y_true, y_pred, mask):
         """Compute masked loss"""
-        # Only compute loss on masked positions
+        # Convert boolean mask to float for loss computation and expand dimensions
         mask_float = tf.cast(mask, tf.float32)
+        mask_float = tf.expand_dims(mask_float, axis=-1)
 
         # MSE loss on masked positions
         mse = tf.reduce_mean(
