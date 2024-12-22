@@ -1,34 +1,56 @@
 import tensorflow as tf
-from tensorflow.python.keras.utils import losses_utils
+from tensorflow.keras.losses import Loss
 
 
-class LossFunction():
-    """ Encapsulates a normalized variation of the loss function described in the paper BERT4NILM: A Bidirectional
-    Transformer Model for Non-Intrusive Load Monitoring, Zhenrui Yue et. al"""
+# Updated LossFunction
+class LossFunction(Loss):
+    def __init__(self, config, **kwargs):
+        super().__init__(**kwargs)
+        self.temperature = config.temperature
+        self.on_threshold = config.on_threshold
+        self.lambda_val = config.lambda_val
+        self.masking_token = config.mask_token
 
-    def __init__(self, wandb_config, reduction=losses_utils.ReductionV2.AUTO, name="bert4nilm_loss"):
-        self.max_power = wandb_config.appliance_max_power
-        self.lambda_val = wandb_config.lambda_val
+    @tf.autograph.experimental.do_not_convert
+    def call(self, y_true, y_pred):
+        # Add numerical stability
+        eps = 1e-7
+        y_pred = tf.clip_by_value(y_pred, -1e7, 1e7)
 
-    def compute(self, app_pw_grd_truth, app_pw_predicted, mask):  # Added mask parameter
-        app_pw_predicted = tf.reshape(app_pw_predicted, tf.shape(app_pw_grd_truth))
-        app_pw_predicted = tf.clip_by_value(app_pw_predicted, 0, self.max_power)
+        # Identify the masked portion using the masking_token
+        mask = tf.reduce_all(tf.equal(y_true, self.masking_token), axis=-1)
+        mask = tf.cast(mask, tf.float32)
 
-        # Compute Mean Squared Error (MSE)
-        mse_loss = tf.square(app_pw_predicted - app_pw_grd_truth)
+        # Ensure y_true and y_pred have the same shape
+        y_true_shape = tf.shape(y_true)
+        y_pred_shape = tf.shape(y_pred)
 
-        # Compute L1 Loss
-        l1_loss = tf.abs(app_pw_predicted - app_pw_grd_truth)
+        tf.debugging.assert_equal(y_true_shape, y_pred_shape, "y_true and y_pred must have the same shape")
 
-        # Apply mask
-        mask = tf.cast(mask, tf.float32)  # Use input mask instead of mask_observer
-        mse_loss = tf.reduce_sum(mse_loss * mask) / tf.reduce_sum(mask)
-        l1_loss = tf.reduce_sum(l1_loss * mask) / tf.reduce_sum(mask)
+        # Apply mask to predictions and true values
+        y_pred_masked = y_pred * tf.expand_dims(mask, axis=-1)
+        y_true_masked = y_true * tf.expand_dims(mask, axis=-1)
 
-        # Normalize and combine losses
-        norm_mse = mse_loss / (1 + mse_loss)
-        norm_l1_loss = (l1_loss * self.lambda_val) / (1 + l1_loss * self.lambda_val)
+        # MSE term
+        mse = tf.reduce_sum(tf.square(y_pred_masked - y_true_masked)) / (tf.reduce_sum(mask) + eps)
 
-        total_loss = norm_mse + norm_l1_loss
+        # KL divergence
+        y_true_dist = tf.nn.softmax(y_true_masked / self.temperature + eps, axis=-1)
+        y_pred_dist = tf.nn.softmax(y_pred_masked / self.temperature + eps, axis=-1)
+        kl_div = tf.reduce_sum(
+            tf.keras.losses.KLDivergence()(y_true_dist, y_pred_dist)
+        ) / (tf.reduce_sum(mask) + eps)
 
-        return total_loss
+        # Binary cross-entropy
+        status_true = tf.cast(y_true_masked > self.on_threshold, tf.float32)
+        status_pred = tf.clip_by_value(tf.cast(y_pred_masked > self.on_threshold, tf.float32), eps, 1.0 - eps)
+        bce = tf.reduce_sum(
+            tf.keras.losses.binary_crossentropy(status_true, status_pred)
+        ) / (tf.reduce_sum(mask) + eps)
+
+        # L1 term
+        l1 = tf.reduce_sum(tf.abs(y_pred_masked - y_true_masked)) / (tf.reduce_sum(mask) + eps)
+
+        # Total loss
+        total_loss = mse + 0.1 * kl_div + 0.1 * bce + 0.01 * self.lambda_val * l1
+        return tf.where(tf.math.is_finite(total_loss), total_loss, 1e3)

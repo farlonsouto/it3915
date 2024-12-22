@@ -22,7 +22,7 @@ wandb.init(
 # Retrieve the configuration from WandB
 wandb_config = wandb.config
 
-nn_model = ModelFactory(wandb_config).create_model(model_name)
+nn_model = ModelFactory(wandb_config, True).create_model(model_name)
 
 nn_model.summary()
 

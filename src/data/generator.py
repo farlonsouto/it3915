@@ -163,7 +163,7 @@ class TimeSeriesDataGenerator(Sequence):
             clip_value = self.clip_value[self.appliance]
             appliance_power = appliance_power.clip(-clip_value, clip_value)
 
-        # 3. Finally scale to [0,1] range
+        # 3. Finally scale to [0,1] range - normalize:
         if self.wandb_config.normalize_aggregated:
             if self.wandb_config.standardize_aggregated:
                 aggregated = (aggregated + self.aggregated_clip_value) / (2 * self.aggregated_clip_value)
@@ -171,6 +171,7 @@ class TimeSeriesDataGenerator(Sequence):
                 aggregated_min = self.normalization_params["aggregated"][ac_type_aggregated]['min']
                 aggregated_max = self.normalization_params["aggregated"][ac_type_aggregated]['max']
                 aggregated = (aggregated - aggregated_min) / (aggregated_max - aggregated_min)
+
         if self.wandb_config.normalize_appliance:
             if self.wandb_config.standardize_appliance:
                 clip_value = self.clip_value[self.appliance]

@@ -17,25 +17,22 @@
 
 config = {
 
-    # Appliance and Dataset specific
-    "appliance": "kettle",  # The selected appliance must be the same for training and testing !!
-    "on_threshold": 2000,
-    "max_power": 3200,
-
     # Training
-    "batch_size": 32,
+    "batch_size": 64,  # Larger for better gradient estimates
     "epochs": 3,
-    "learning_rate": 1e-4,
+    "learning_rate": 1e-4,  # Higher learning rate with warmup
     "optimizer": "adam",
-    "loss": "huber",  # "mse" or "huber" seems to make no difference
+    "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
+    "temperature": 0.1,
     "lambda_val": 1.0,  # inside the loss function
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
 
     # Input
-    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
+    "window_stride": 1,
     "mlm_mask": True,  # MLM masking for BERT
+    "mask_token": -0.1,
     "masking_portion": 0.25,
-    "window_stride": 60,
     "add_artificial_activations": False,
     "balance_enabled": False,
     "normalize_aggregated": False,  # min-max, squeezes between 0 and 1
@@ -50,13 +47,13 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 256,  # It is also the hidden size of the LSTMs in the seq2seq
-    "num_heads": 2,
-    "n_layers": 3,
+    "hidden_size": 512,  # Reduced to allow for more layers within same compute
+    "num_heads": 4,  # More heads to capture different pattern aspects
+    "num_layers": 1,  # More layers for better pattern recognition
+    "ff_dim": 512,  # 4x hidden_size as recommended
     "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",  # Originally GELU
-    "ff_dim": 512,  # Feed-forward Network: 4x the hidden size is the recommended.
 
     # Deconvolution layer
     "deconv_kernel_size": 4,

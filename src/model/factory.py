@@ -9,8 +9,9 @@ from .seq2seq import Seq2SeqNILM
 
 class ModelFactory:
 
-    def __init__(self, wandb_config):
+    def __init__(self, wandb_config, is_training):
         self.wandb_config = wandb_config
+        self.is_training = is_training
 
         self.optimizer = tf.keras.optimizers.Adam(
             learning_rate=wandb_config.learning_rate,
@@ -37,8 +38,7 @@ class ModelFactory:
 
     def __bert4nilm(self):
         # Instantiate the BERT4NILM model
-        model = BERT4NILM(self.wandb_config.appliance_max_power, self.wandb_config.window_size, self.wandb_config,
-                          hidden_size=self.wandb_config.hidden_size, ff_dim=self.wandb_config.ff_dim)
+        model = BERT4NILM(self.wandb_config, self.is_training)
         return self.__build_compile(model)
 
     def __seq2seq(self):
@@ -58,15 +58,14 @@ class ModelFactory:
         model.build((None, self.wandb_config.window_size, self.wandb_config.num_features))
 
         # Get the loss function from the WandB config
-        loss_fn = self.loss_fn_mapping.get(self.wandb_config.loss, tf.keras.losses.MeanSquaredError())  # Default to MSE
+        loss_function = self.loss_fn_mapping.get(self.wandb_config.loss,
+                                                 tf.keras.losses.MeanSquaredError())  # Default to MSE
 
         # Use bert4nilm_loss from bert_loss.py, and pass any required arguments from wandb_config
         model.compile(
             optimizer=self.optimizer,
-            metrics=[
-                MeanRelativeError(name='MRE'),
-                tf.keras.metrics.MeanAbsoluteError(name='MAE'),
-            ]
+            loss=loss_function,
+            metrics=[MeanRelativeError(), "MAE"],
         )
 
         return model

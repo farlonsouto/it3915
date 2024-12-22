@@ -6,10 +6,10 @@ from nilmtk import DataSet
 from cmd_line_input import get_args
 from custom.metric.regression import MeanRelativeError
 from data.timeseries import TimeSeries
-from src.model.factory import ModelFactory
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_model_appliance
 from plotter import plot_comparison
+from src.model.factory import ModelFactory
 
 # Set GPU memory growth
 set_gpu_memory_growth()
@@ -31,7 +31,7 @@ except Exception as e:
     print("Trying to rebuild the model and load weights...")
 
     # Rebuild the model
-    nn_model = ModelFactory(wandb_config).create_model(model_name)
+    nn_model = ModelFactory(wandb_config, False).create_model(model_name)
 
     # Load the weights from the checkpoint files
     nn_model.load_weights('../models/bert_model')
