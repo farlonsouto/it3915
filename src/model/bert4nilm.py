@@ -1,12 +1,16 @@
 import tensorflow as tf
 from tensorflow.keras import Model, layers
 
+from src.custom.loss.bert4nilm import LossFunction
+from .custom.layers import LearnedL2NormPooling, TransformerBlock
+
 
 class BERT4NILM(Model):
 
     def __init__(self, config, is_training):
         super(BERT4NILM, self).__init__()
         self.config = config
+        self.loss_function = LossFunction(config)
 
         # Embedding module with convolutional layer
         self.conv1d = layers.Conv1D(
@@ -54,6 +58,7 @@ class BERT4NILM(Model):
         self.dense1 = layers.Dense(config['hidden_size'], activation='tanh')
         self.dense2 = layers.Dense(config['output_size'])
 
+    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, training=False, mask=None):
         # Embedding module
         x = self.conv1d(inputs)
@@ -77,72 +82,33 @@ class BERT4NILM(Model):
         return predictions
 
     def train_step(self, data):
-        x, y = data
-        aggregated, mask = x
-        with tf.GradientTape() as tape:
-            predictions = self(aggregated, training=True)
-            loss = self.compiled_loss(y, predictions, mask)
-        gradients = tape.gradient(loss, self.trainable_variables)
-        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-        self.compiled_metrics.update_state(y, predictions)
-        return {m.name: m.result() for m in self.metrics}
+        # Unpack the data
+        aggregated, y_true, mask = data
 
+        try:
+            with tf.GradientTape() as tape:
+                # Forward pass
+                predictions = self(aggregated, training=True)
+                # Compute loss with explicit mask parameter
+                loss = self.loss_function(y_true, predictions, mask)
 
-class LearnedL2NormPooling(layers.Layer):
-    def __init__(self, kernel_size=2, strides=2):
-        super(LearnedL2NormPooling, self).__init__()
-        self.kernel_size = kernel_size
-        self.strides = strides
+            # Compute gradients
+            gradients = tape.gradient(loss, self.trainable_variables)
 
-    def build(self, input_shape):
-        self.alpha = self.add_weight(
-            'alpha',
-            shape=[1],
-            initializer='ones',
-            trainable=True
-        )
+            # Apply gradients
+            self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-    def call(self, inputs, **kwargs):
-        # Square the inputs
-        x = tf.square(inputs)
+            # Update metrics
+            self.compiled_metrics.update_state(y_true, predictions)
 
-        # Apply average pooling to squared values
-        x = tf.nn.avg_pool1d(
-            x,
-            ksize=self.kernel_size,
-            strides=self.strides,
-            padding='VALID'
-        )
-
-        # Apply learned scale and square root
-        return tf.sqrt(x * self.alpha)
-
-
-class TransformerBlock(layers.Layer):
-    def __init__(self, hidden_size, num_heads, ff_dim, dropout, epsilon, is_training):
-        super(TransformerBlock, self).__init__()
-        self.is_training = is_training
-        self.attention = layers.MultiHeadAttention(
-            num_heads=num_heads,
-            key_dim=hidden_size // num_heads,
-            dropout=dropout
-        )
-        self.ffn = tf.keras.Sequential([
-            layers.Dense(ff_dim, activation="gelu"),
-            layers.Dense(hidden_size)
-        ])
-        self.layernorm1 = layers.LayerNormalization(epsilon=epsilon)
-        self.layernorm2 = layers.LayerNormalization(epsilon=epsilon)
-        self.dropout1 = layers.Dropout(dropout)
-        self.dropout2 = layers.Dropout(dropout)
-
-    def call(self, inputs, mask=None):
-        # Multi-head attention with residual connection and layer norm
-        attention_output = self.attention(inputs, inputs)
-        attention_output = self.dropout1(attention_output, training=self.is_training)
-        out1 = self.layernorm1(inputs + attention_output)
-
-        # Feed-forward network with residual connection and layer norm
-        ffn_output = self.ffn(out1)
-        ffn_output = self.dropout2(ffn_output, training=self.is_training)
-        return self.layernorm2(out1 + ffn_output)
+            # Update metrics (includes the metric that tracks the loss)
+            for metric in self.metrics:
+                if metric.name == "loss":
+                    metric.update_state(loss)
+                else:
+                    metric.update_state(y_true, predictions)
+            # Return a dict mapping metric names to current value
+            return {m.name: m.result() for m in self.metrics}
+        except Exception as e:
+            print(f"Error in train_step: {e}")
+            return {m.name: m.result() for m in self.metrics}

@@ -64,7 +64,7 @@ for metric_name, result in zip(nn_model.metrics_names, results):
     print(f"{metric_name}: {result}")
 
 # Get predictions on the test data
-X_test, y_test = next(iter(test_gen))  # Get the first batch of test data
+X_test, y_test, _ = next(iter(test_gen))  # Get the first batch of test data
 predictions = nn_model.predict(X_test)
 
 # Print example predictions
