@@ -1,18 +1,21 @@
 import numpy as np
 import pandas as pd
-from data.adjustment import Augment, Balance
 from nilmtk import TimeFrame
 from tensorflow.keras.utils import Sequence
+
+from src.data.adjustment import Augment, Balance
 
 
 class TimeSeriesDataGenerator(Sequence):
     """ Generates
         a) An x (aggregated reading, input) with 1 (one) single channels:
-            1. Mains power (mixed AC types)
+            Mains power (mixed AC types)
         b) An y (appliance reading, ground truth) with 1 channel:
-            1. Appliance power (always wit the AC type active)
-        At the end, yields multiple pairs (x, y) where x and y are aligned according to their original timestamps
-        and have shapes (window size, 5) and (window size, 1) respectively.
+            Appliance power (always wit the AC type active)
+        c)  An m mask:
+            1 for positions to compute loss, 0 for others
+        At the end, yields multiple tuples ((x,m), y) where x, m and y are aligned according to the original timestamps
+        of x (aggregated readings) and y (ground truth).
     """
 
     def __init__(self, dataset, buildings, appliance, normalization_params, wandb_config, is_training=True, ):
@@ -91,15 +94,18 @@ class TimeSeriesDataGenerator(Sequence):
                 appliance_power = next(appliance_generator)
 
                 # Performs the pre-processing of the data:
-                mains_power, appliance_power = self._process_data(mains_power, appliance_power,
-                                                                  ac_type_aggregated)
+                aggregated_and_mask, appliance_power = self._process_data(mains_power, appliance_power,
+                                                                          ac_type_aggregated)
 
                 stride = self.window_size
                 if self.is_training:
                     stride = self.window_stride
-                # Yield the data in the expected window size
                 for i in range(0, len(mains_power) - self.window_size + 1, stride):
-                    yield mains_power[i:i + self.window_size], appliance_power[i:i + self.window_size]
+                    agg = aggregated_and_mask[0][i:i + self.window_size]
+                    msk = aggregated_and_mask[1][i:i + self.window_size]
+                    yielded_main_and_mask = (agg, msk)
+                    yielded_appl = appliance_power[i:i + self.window_size]
+                    yield yielded_main_and_mask, yielded_appl
 
     def _time_delta(self):
         """ The time delta in seconds. For convenience, a multiple of the self.window_size to enable dividing the
@@ -185,7 +191,45 @@ class TimeSeriesDataGenerator(Sequence):
         appliance_power = appliance_power.values.reshape(-1, 1)
         aggregated = aggregated.values.reshape(-1, 1)
 
-        return aggregated, appliance_power
+        # MLM masking
+        if self.wandb_config.mlm_mask:
+            mask = self.apply_mask(aggregated, float(self.masking_portion), float(self.wandb_config.mask_token))
+
+        return (aggregated, mask), appliance_power
+
+    def apply_mask(self, aggregated, masking_portion, masking_token):
+        """
+        Replace a given percentage of the aggregated array with a specific masking value. The masked positions are the
+        ones to be considered for loss computation in the scope of MLM - Masked Learning Model.
+
+        Parameters:
+        - aggregated (np.ndarray): Input array, aggregated readings
+        - masking_portion (float): Percentage of elements to replace (0 <= p <= 1).
+        - masking_token (scalar): Value to replace with.
+
+        Returns:
+        - np.ndarray: Array with replaced values, i.e., aggregated with masking
+        """
+
+        if self.wandb_config.model != 'bert4nilm':
+            # For any other model, all positions are to be used and no masking applies
+            return np.full(aggregated.shape, True)
+
+        # Calculate the number of elements to replace
+        num_elements = len(aggregated)
+        num_to_replace = int(num_elements * masking_portion)
+
+        # Randomly choose indices for replacement
+        replace_indices = np.random.choice(num_elements, size=num_to_replace, replace=False)
+
+        # Create a boolean mask
+        mask = np.empty(num_elements, dtype=bool)
+        mask[replace_indices] = True
+
+        # Replace the values
+        aggregated[replace_indices] = masking_token
+
+        return mask
 
     def _count_samples(self):
         """
@@ -244,28 +288,32 @@ class TimeSeriesDataGenerator(Sequence):
         """
         Fetches a batch of data using the generator.
         Adjusted to work for Seq2Point by using midpoint targets.
+        Arguments:
+            index: position of the batch in the Sequence.
+        Returns:
+            A tuple of ((batch x,batch mask), batch y)
         """
-        batch_X, batch_y, batch_mask = [], [], []
+        batch_x_m, batch_y = [], []
         for _ in range(self.batch_size):
             try:
-                X, y = next(self.data_generator)
+                x_m, y = next(self.data_generator)
                 if self.wandb_config.model == 'seq2p':
                     midpoint = len(y) // 2
                     y = y[midpoint]
 
-                batch_X.append(X)
+                batch_x_m.append(x_m)
                 batch_y.append(y)
 
             except StopIteration:
                 # Reset the generator and fetch the next batch
                 self.data_generator = self._data_generator()
-                X, y, mask = next(self.data_generator)
+                x_m, y = next(self.data_generator)
 
                 if self.wandb_config.model == 'seq2p':
                     midpoint = len(y) // 2
                     y = y[midpoint]
 
-                batch_X.append(X)
+                batch_x_m.append(x_m)
                 batch_y.append(y)
 
-        return np.array(batch_X), np.array(batch_y)
+        return np.array(batch_x_m), np.array(batch_y)

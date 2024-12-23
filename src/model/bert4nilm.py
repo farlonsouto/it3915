@@ -1,17 +1,12 @@
 import tensorflow as tf
 from tensorflow.keras import Model, layers
 
-from src.custom.loss.bert4nilm import LossFunction
-from src.data.masking import Mask
-
 
 class BERT4NILM(Model):
 
     def __init__(self, config, is_training):
         super(BERT4NILM, self).__init__()
         self.config = config
-        self.mask = Mask(config)
-        self.loss_fn = LossFunction(config)
 
         # Embedding module with convolutional layer
         self.conv1d = layers.Conv1D(
@@ -59,18 +54,9 @@ class BERT4NILM(Model):
         self.dense1 = layers.Dense(config['hidden_size'], activation='tanh')
         self.dense2 = layers.Dense(config['output_size'])
 
-    def build(self, input_shape):
-        # Build the model with the correct input shape
-        super().build(input_shape)
-        # Ensure the mask layer is built
-        self.mask.build(input_shape)
-
     def call(self, inputs, training=False, mask=None):
-        # Apply masking over the original input
-        masked_input_tensor = self.mask(inputs, training)
-
         # Embedding module
-        x = self.conv1d(masked_input_tensor)
+        x = self.conv1d(inputs)
         x = self.l2_pool(x)
 
         # Add positional embedding
@@ -85,38 +71,21 @@ class BERT4NILM(Model):
         x = self.dense1(x)
         x = self.dense2(x)
 
-        # Ensure output is between 0 and 1
-        predictions = tf.clip_by_value(x, 0, 1)
+        # Ensure output is between 0 and 1 TODO: Is that correct?
+        predictions = tf.clip_by_value(x, 1, self.config['appliance_max_power'])
 
         return predictions
 
     def train_step(self, data):
         x, y = data
-
+        aggregated, mask = x
         with tf.GradientTape() as tape:
-            # Forward pass
-            y_pred_and_mask = self(x, training=True)
-            # Calculate loss
-            loss = self.loss_fn(y, y_pred_and_mask)
-
-        # Compute gradients
-        trainable_vars = self.trainable_variables
-        gradients = tape.gradient(loss, trainable_vars)
-
-        # Update weights
-        self.optimizer.apply_gradients(zip(gradients, trainable_vars))
-
-        return {"loss": loss}
-
-    def test_step(self, data):
-        x, y = data
-
-        # Forward pass
-        y_pred_and_mask = self(x, training=False)
-        # Calculate loss
-        loss = self.loss_fn(y, y_pred_and_mask)
-
-        return {"loss": loss}
+            predictions = self(aggregated, training=True)
+            loss = self.compiled_loss(y, predictions, mask)
+        gradients = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        self.compiled_metrics.update_state(y, predictions)
+        return {m.name: m.result() for m in self.metrics}
 
 
 class LearnedL2NormPooling(layers.Layer):

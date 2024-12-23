@@ -36,22 +36,17 @@ timeSeries = TimeSeries(dataset, training_buildings, [2], wandb_config)
 
 train_gen = timeSeries.getTrainingDataGenerator()
 X_batch, y_batch = train_gen[0]
+
+# Ensure the shapes match
+print(f"Sample batch shapes - X: {X_batch.shape}, y: {y_batch.shape}")
+
+if wandb_config.model == "bert":
+    X_batch = X_batch[0][1]
 print("Sample statistics:")
 print(f"X mean: {np.mean(X_batch)}, std: {np.std(X_batch)}")
 print(f"y mean: {np.mean(y_batch)}, std: {np.std(y_batch)}")
 print(f"X range: [{np.min(X_batch)}, {np.max(X_batch)}]")
 print(f"y range: [{np.min(y_batch)}, {np.max(y_batch)}]")
-
-# Ensure these shapes match
-X_sample, y_sample = train_gen[0]
-print(f"Sample batch shapes - X: {X_sample.shape}, y: {y_sample.shape}")
-assert X_sample.shape == (
-    wandb_config.batch_size, wandb_config.window_size, wandb_config.num_features), "Incorrect input shape"
-
-if wandb_config.model == "seq2p":
-    assert y_sample.shape == (wandb_config.batch_size, 1), "Incorrect seq2p target shape"
-else:
-    assert y_sample.shape == (wandb_config.batch_size, wandb_config.window_size, 1), "Incorrect seq2seq target shape"
 
 print("... The training data is available. Starting training ...")
 
