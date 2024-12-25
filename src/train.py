@@ -34,11 +34,18 @@ dataset = DataSet(path_to_dataset)
 training_buildings = [1, 3, 4, 5]
 timeSeries = TimeSeries(dataset, training_buildings, [2], wandb_config)
 
+m_batch = None
 train_gen = timeSeries.getTrainingDataGenerator()
-X_batch, y_batch, m_batch = train_gen[0]
+if wandb_config.model == 'bert':
+    X_batch, y_batch, m_batch = train_gen[0]
+else:
+    X_batch, y_batch = train_gen[0]
 
 # Ensure the shapes match
-print(f"Sample batch shapes - X: {X_batch.shape}, y: {y_batch.shape}")
+if wandb_config.model == 'bert':
+    print(f"Sample batch shapes - X: {X_batch.shape}, y: {y_batch.shape}, m: {m_batch.shape}")
+else:
+    print(f"Sample batch shapes - X: {X_batch.shape}, y: {y_batch.shape}")
 print("Sample statistics:")
 print(f"X mean: {np.mean(X_batch)}, std: {np.std(X_batch)}")
 print(f"y mean: {np.mean(y_batch)}, std: {np.std(y_batch)}")

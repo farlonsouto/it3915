@@ -29,15 +29,15 @@ config = {
 
     # Input
     "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
-    "window_stride": 1,
+    "window_stride": 40,
     "mlm_mask": True,  # MLM masking for BERT
-    "mask_token": -0.1,
+    "mask_token": -789,
     "masking_portion": 0.25,
-    "add_artificial_activations": False,
+    "add_artificial_activations": True,
     "balance_enabled": False,
     "normalize_aggregated": False,  # min-max, squeezes between 0 and 1
     "normalize_appliance": False,  # min-max, squeezes between 0 and 1
-    "standardize_aggregated": False,  # z-score, Uses mean and std: x = (x - x_mean) / x_std
+    "standardize_aggregated": True,  # z-score, Uses mean and std: x = (x - x_mean) / x_std
     "standardize_appliance": False,  # z-score, Uses mean and std: y = (y - y_mean) / y_std
 
     # 1D Convolution layer
@@ -47,9 +47,9 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 512,  # Reduced to allow for more layers within same compute
-    "num_heads": 4,  # More heads to capture different pattern aspects
-    "num_layers": 1,  # More layers for better pattern recognition
+    "hidden_size": 256,  # Reduced to allow for more layers within same compute
+    "num_heads": 2,  # More heads to capture different pattern aspects
+    "num_layers": 2,  # More layers for better pattern recognition
     "ff_dim": 512,  # 4x hidden_size as recommended
     "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6

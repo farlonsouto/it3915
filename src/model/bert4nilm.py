@@ -1,7 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import Model, layers
 
-from src.custom.loss.bert4nilm import LossFunction
 from .custom.layers import LearnedL2NormPooling, TransformerBlock
 
 
@@ -10,7 +9,6 @@ class BERT4NILM(Model):
     def __init__(self, config, is_training):
         super(BERT4NILM, self).__init__()
         self.config = config
-        self.loss_function = LossFunction(config)
 
         # Embedding module with convolutional layer
         self.conv1d = layers.Conv1D(
@@ -76,39 +74,38 @@ class BERT4NILM(Model):
         x = self.dense1(x)
         x = self.dense2(x)
 
-        # Ensure output is between 0 and 1 TODO: Is that correct?
+        # Ensure output is between 0 and 1
         predictions = tf.clip_by_value(x, 1, self.config['appliance_max_power'])
 
         return predictions
 
     def train_step(self, data):
-        # Unpack the data
         aggregated, y_true, mask = data
 
-        try:
-            with tf.GradientTape() as tape:
-                # Forward pass
-                predictions = self(aggregated, training=True)
-                # Compute loss with explicit mask parameter
-                loss = self.loss_function(y_true, predictions, mask)
+        with tf.GradientTape() as tape:
+            # Forward pass
+            predictions = self(aggregated, training=True)
 
-            # Compute gradients
-            gradients = tape.gradient(loss, self.trainable_variables)
+            # Adjust mask to match y_true/pred dimensions if necessary
+            if len(mask.shape) < len(y_true.shape):
+                mask = tf.expand_dims(mask, axis=-1)
 
-            # Apply gradients
-            self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+            # Apply mask to calculate loss based only on the masked positions
+            bool_mask = tf.cast(mask, tf.bool)
+            y_true_masked = tf.boolean_mask(y_true, bool_mask)
+            predictions_masked = tf.boolean_mask(predictions, bool_mask)
 
-            # Update metrics
-            self.compiled_metrics.update_state(y_true, predictions)
+            # Compute loss
+            loss = self.compiled_loss(y_true_masked, predictions_masked)
 
-            # Update metrics (includes the metric that tracks the loss)
-            for metric in self.metrics:
-                if metric.name == "loss":
-                    metric.update_state(loss)
-                else:
-                    metric.update_state(y_true, predictions)
-            # Return a dict mapping metric names to current value
-            return {m.name: m.result() for m in self.metrics}
-        except Exception as e:
-            print(f"Error in train_step: {e}")
-            return {m.name: m.result() for m in self.metrics}
+        # Compute gradients
+        gradients = tape.gradient(loss, self.trainable_variables)
+
+        # Apply gradients
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        # Update metrics
+        self.compiled_metrics.update_state(y_true_masked, predictions_masked)
+
+        # Return metrics
+        return {m.name: m.result() for m in self.metrics}

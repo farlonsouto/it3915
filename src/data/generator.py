@@ -100,7 +100,7 @@ class TimeSeriesDataGenerator(Sequence):
                 stride = self.window_size
                 if self.is_training:
                     stride = self.window_stride
-                for i in range(0, len(mains_power) - self.window_size + 1, stride):
+                for i in range(0, len(aggregated_proc) - self.window_size + 1, stride):
                     yielded_agg = aggregated_proc[i:i + self.window_size]
                     yielded_app = appliance_proc[i:i + self.window_size]
                     yielded_msk = mask_proc[i:i + self.window_size]
@@ -136,9 +136,9 @@ class TimeSeriesDataGenerator(Sequence):
         aggregated, appliance_power = aggregated.align(appliance_power, join='inner', method='pad', limit=1)
 
         # mask_observer.py for values to ignore
-        mask = appliance_power == 1.0
+        standby_power_mask = appliance_power == 1.0
         # Apply clipping only where the mask is False
-        appliance_power = appliance_power.where(mask,
+        appliance_power = appliance_power.where(standby_power_mask,
                                                 appliance_power.clip(lower=self.on_threshold, upper=self.max_power))
 
         # Any data modification or adjustment should take place before the normalization
@@ -190,16 +190,15 @@ class TimeSeriesDataGenerator(Sequence):
         appliance_power = appliance_power.values.reshape(-1, 1)
         aggregated = aggregated.values.reshape(-1, 1)
 
-        # MLM masking
-        if self.wandb_config.mlm_mask:
-            mask = self.apply_mask(aggregated, float(self.masking_portion), float(self.wandb_config.mask_token))
+        masked_aggregated, mask = self.apply_mask(aggregated, float(self.masking_portion),
+                                                  float(self.wandb_config.mask_token))
 
-        return aggregated, appliance_power, mask
+        return masked_aggregated, appliance_power, mask
 
     def apply_mask(self, aggregated, masking_portion, masking_token):
         """
-        Replace a given percentage of the aggregated array with a specific masking value. The masked positions are the
-        ones to be considered for loss computation in the scope of MLM - Masked Learning Model.
+        Replace a given percentage of the aggregated array with a specific masking value.
+        The masked positions are the ones to be considered for loss computation in MLM.
 
         Parameters:
         - aggregated (np.ndarray): Input array, aggregated readings
@@ -207,29 +206,44 @@ class TimeSeriesDataGenerator(Sequence):
         - masking_token (scalar): Value to replace with.
 
         Returns:
-        - np.ndarray: Array with replaced values, i.e., aggregated with masking
+        - np.ndarray: Modified aggregated array with replaced values.
+        - np.ndarray: Mask array indicating masked positions.
         """
+        if not self.wandb_config.mlm_mask or self.wandb_config.model != 'bert':
+            # For other models, return a mask of ones
+            mask = np.ones_like(aggregated)
+            assert aggregated.shape == mask.shape, "Shape mismatch between aggregated and mask"
+            return aggregated, mask
 
-        if self.wandb_config.model != 'bert':
-            # For any other model, all positions are to be used and no masking applies
-            return np.full(aggregated.shape, True)
-
-        # Calculate the number of elements to replace
-        num_elements = len(aggregated)
+        # Flatten the aggregated array for easier manipulation
+        flat_aggregated = aggregated.ravel()
+        num_elements = flat_aggregated.size
         num_to_replace = int(num_elements * masking_portion)
 
-        # Randomly choose indices for replacement
+        # Handle edge cases
+        if num_to_replace <= 0:
+            mask = np.ones_like(aggregated)
+            assert aggregated.shape == mask.shape, "Shape mismatch between aggregated and mask"
+            return aggregated, mask
+
+        # Generate random indices for replacement
         replace_indices = np.random.choice(num_elements, size=num_to_replace, replace=False)
 
-        # Create a boolean mask
-        mask = np.empty(num_elements, dtype=bool)
-        mask.fill(False)
-        mask[replace_indices] = True
+        # Initialize a flat mask array and mark replacement indices
+        flat_mask = np.zeros_like(flat_aggregated)
+        flat_mask[replace_indices] = 1.0
 
-        # Replace the values
-        aggregated[replace_indices] = masking_token
+        # Apply the masking token at the chosen indices
+        flat_aggregated[replace_indices] = masking_token
 
-        return mask
+        # Reshape back to the original aggregated shape
+        modified_aggregated = flat_aggregated.reshape(aggregated.shape)
+        mask = flat_mask.reshape(aggregated.shape)
+
+        # Final assertion to ensure shapes match
+        assert modified_aggregated.shape == mask.shape, "Shape mismatch between modified_aggregated and mask"
+
+        return modified_aggregated, mask
 
     def _count_samples(self):
         """
@@ -308,14 +322,16 @@ class TimeSeriesDataGenerator(Sequence):
             except StopIteration:
                 # Reset the generator and fetch the next batch
                 self.data_generator = self._data_generator()
-                x_m, y = next(self.data_generator)
+                x, y, m = next(self.data_generator)
 
                 if self.wandb_config.model == 'seq2p':
                     midpoint = len(y) // 2
                     y = y[midpoint]
 
-                batch_x.append(x_m)
+                batch_x.append(x)
                 batch_y.append(y)
                 batch_m.append(m)
 
-        return np.array(batch_x), np.array(batch_y), np.array(batch_m)
+        if self.wandb_config.model == 'bert':
+            return np.array(batch_x), np.array(batch_y), np.array(batch_m)
+        return np.array(batch_x), np.array(batch_y)
