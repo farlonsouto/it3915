@@ -5,10 +5,10 @@ from .custom.layers import LearnedL2NormPooling, TransformerBlock
 
 
 class BERT4NILM(Model):
-
     def __init__(self, config, is_training):
         super(BERT4NILM, self).__init__()
         self.config = config
+        self.is_training = is_training
 
         # Embedding module with convolutional layer
         self.conv1d = layers.Conv1D(
@@ -16,7 +16,8 @@ class BERT4NILM(Model):
             kernel_size=config['conv_kernel_size'],
             strides=config['conv_strides'],
             padding='same',
-            activation=config['conv_activation']
+            activation=config['conv_activation'],
+            kernel_regularizer="l1_l2"
         )
 
         # L2 Norm Pooling (learned)
@@ -32,6 +33,10 @@ class BERT4NILM(Model):
             initializer=tf.keras.initializers.TruncatedNormal(stddev=0.02)
         )
 
+        # Add initial layer norm and dropout (to match PyTorch)
+        self.initial_layer_norm = layers.LayerNormalization(epsilon=config['layer_norm_epsilon'])
+        self.initial_dropout = layers.Dropout(config['dropout'])
+
         # Transformer layers
         self.transformer_blocks = [
             TransformerBlock(
@@ -44,40 +49,44 @@ class BERT4NILM(Model):
             ) for _ in range(config['num_layers'])
         ]
 
-        # Output module
+        # Rest of the layers remain the same...
         self.deconv = layers.Conv1DTranspose(
             filters=config['hidden_size'],
             kernel_size=config['deconv_kernel_size'],
             strides=config['deconv_strides'],
             padding='same',
-            activation=config['deconv_activation']
+            activation=config['deconv_activation'],
+            kernel_regularizer="l1_l2"
         )
 
         self.dense1 = layers.Dense(config['hidden_size'], activation='tanh')
         self.dense2 = layers.Dense(config['output_size'])
 
-    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, training=False, mask=None):
         # Embedding module
-        x = self.conv1d(inputs)
+        x = self.conv1d(inputs)  # inputs already has shape (batch_size, window_size, 1)
         x = self.l2_pool(x)
 
         # Add positional embedding
-        x = x + self.pos_embedding
+        x_token = x
+        embedding = x_token + self.pos_embedding
+
+        # Initial layer norm and dropout (matching PyTorch)
+        x = self.initial_layer_norm(embedding)
+        x = self.initial_dropout(x, training=training or self.is_training)
 
         # Apply transformer blocks
         for transformer_block in self.transformer_blocks:
             x = transformer_block(x, training)
 
-        # Output module
+        # Permute back for deconv (matching PyTorch's permute operations)
         x = self.deconv(x)
-        x = self.dense1(x)
+
+        # Output module with tanh activation (matching PyTorch)
+        x = tf.tanh(self.dense1(x))
         x = self.dense2(x)
 
-        # Ensure output is between 0 and 1
-        predictions = tf.clip_by_value(x, 1, self.config['appliance_max_power'])
-
-        return predictions
+        return x
 
     def train_step(self, data):
         aggregated, y_true, mask = data

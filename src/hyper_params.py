@@ -30,7 +30,7 @@ config = {
     # Input
     "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
     "window_stride": 40,
-    "mlm_mask": True,  # MLM masking for BERT
+    "mlm_mask": False,  # MLM masking for BERT
     "mask_token": -789,
     "masking_portion": 0.25,
     "add_artificial_activations": True,
