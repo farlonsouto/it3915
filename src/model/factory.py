@@ -1,7 +1,7 @@
 import tensorflow as tf
+from custom.loss.bert4nilm import LossFunction
+from custom.metric.regression import MeanRelativeError
 
-from src.custom.loss.bert4nilm import LossFunction
-from src.custom.metric.regression import MeanRelativeError
 from .bert4nilm import BERT4NILM
 from .seq2p import Seq2PointNILM
 from .seq2seq import Seq2SeqNILM

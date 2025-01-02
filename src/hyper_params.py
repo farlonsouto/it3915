@@ -18,7 +18,7 @@
 config = {
 
     # Training
-    "batch_size": 64,  # Larger for better gradient estimates
+    "batch_size": 16,  # Larger for better gradient estimates
     "epochs": 3,
     "learning_rate": 1e-4,  # Higher learning rate with warmup
     "optimizer": "adam",
@@ -28,8 +28,8 @@ config = {
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
 
     # Input
-    "window_size": 240,  # for UK Dale, 10 time steps mean 1 minute
-    "window_stride": 40,
+    "window_size": 599,  # for UK Dale, 10 time steps mean 1 minute
+    "window_stride": 1,
     "mlm_mask": False,  # MLM masking for BERT
     "mask_token": -789,
     "masking_portion": 0.25,
@@ -38,7 +38,7 @@ config = {
     "normalize_aggregated": False,  # min-max, squeezes between 0 and 1
     "normalize_appliance": False,  # min-max, squeezes between 0 and 1
     "standardize_aggregated": True,  # z-score, Uses mean and std: x = (x - x_mean) / x_std
-    "standardize_appliance": False,  # z-score, Uses mean and std: y = (y - y_mean) / y_std
+    "standardize_appliance": True,  # z-score, Uses mean and std: y = (y - y_mean) / y_std
 
     # 1D Convolution layer
     "conv_kernel_size": 5,

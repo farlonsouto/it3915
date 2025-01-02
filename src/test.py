@@ -8,8 +8,8 @@ from custom.metric.regression import MeanRelativeError
 from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_model_appliance
+from model.factory import ModelFactory
 from plotter import plot_comparison
-from src.model.factory import ModelFactory
 
 # Set GPU memory growth
 set_gpu_memory_growth()
@@ -34,7 +34,7 @@ except Exception as e:
     nn_model = ModelFactory(wandb_config, False).create_model(model_name)
 
     # Load the weights from the checkpoint files
-    nn_model.load_weights('../models/bert_model')
+    nn_model.load_weights('../models/{}_model'.format(model_name))
     print("Model architecture rebuilt and weights loaded successfully!")
 
     # Compile the model for evaluation

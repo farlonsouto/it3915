@@ -3,7 +3,7 @@ import pandas as pd
 from nilmtk import TimeFrame
 from tensorflow.keras.utils import Sequence
 
-from src.data.adjustment import Augment, Balance
+from .adjustment import Augment, Balance
 
 
 class TimeSeriesDataGenerator(Sequence):
