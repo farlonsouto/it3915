@@ -71,7 +71,7 @@ class BERT4NILM(Model):
         x_token = x
         embedding = x_token + self.pos_embedding
 
-        # Initial layer norm and dropout (matching PyTorch)
+        # Initial layer norm and dropout (matching the original PyTorch impl)
         x = self.initial_layer_norm(embedding)
         x = self.initial_dropout(x, training=training or self.is_training)
 
@@ -82,7 +82,7 @@ class BERT4NILM(Model):
         # Permute back for deconv (matching PyTorch's permute operations)
         x = self.deconv(x)
 
-        # Output module with tanh activation (matching PyTorch)
+        # Output module with tanh activation (matching the original PyTorch impl)
         x = tf.tanh(self.dense1(x))
         x = self.dense2(x)
 

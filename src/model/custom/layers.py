@@ -60,3 +60,140 @@ class TransformerBlock(layers.Layer):
         ffn_output = self.ffn(out1)
         ffn_output = self.dropout2(ffn_output, training=self.is_training)
         return self.layernorm2(out1 + ffn_output)
+
+
+class PowerAwareAttention(layers.MultiHeadAttention):
+    def __init__(
+            self,
+            num_heads,
+            key_dim,
+            power_threshold,
+            value_dim=None,
+            dropout=0.0,
+            use_bias=True,
+            output_shape=None,
+            attention_axes=None,
+            **kwargs
+    ):
+        super(PowerAwareAttention, self).__init__(
+            num_heads=num_heads,
+            key_dim=key_dim,
+            value_dim=value_dim,
+            dropout=dropout,
+            use_bias=use_bias,
+            output_shape=output_shape,
+            attention_axes=attention_axes,
+            **kwargs
+        )
+        self.power_threshold = power_threshold
+
+        # Ensure value_dim is set
+        self._value_dim = value_dim if value_dim is not None else key_dim
+
+        # Call _build_from_signature to set up necessary attributes
+        self._build_from_signature(query=tf.TensorSpec(shape=[None, None, key_dim]),
+                                   value=tf.TensorSpec(shape=[None, None, self._value_dim]),
+                                   key=tf.TensorSpec(shape=[None, None, key_dim]))
+
+        # Add a dense layer to project the attention output back to the original dimension
+        self.output_dense = layers.Dense(key_dim * num_heads)
+
+    def build(self, input_shape):
+        super(PowerAwareAttention, self).build(input_shape)
+
+        # Build event detection components
+        self.event_encoder = layers.Dense(self._key_dim * self._num_heads)
+
+        # Temperature parameter for attention scaling
+        self.temperature = self.add_weight(
+            'temperature',
+            shape=[1],
+            initializer=tf.keras.initializers.Constant(1.0),
+            trainable=True
+        )
+
+    def _compute_attention(self, query, key, value, attention_mask=None, training=None):
+        # Compute base attention scores using parent class method
+        query_shape = tf.shape(query)
+        batch_size, seq_len = query_shape[0], query_shape[1]
+
+        # Reshape query, key, value
+        query = tf.reshape(query, [batch_size, seq_len, self._num_heads, self._key_dim])
+        key = tf.reshape(key, [batch_size, seq_len, self._num_heads, self._key_dim])
+        value = tf.reshape(value, [batch_size, seq_len, self._num_heads, self._value_dim])
+
+        # Transpose to [batch, num_heads, seq_len, key/value_dim]
+        query = tf.transpose(query, [0, 2, 1, 3])
+        key = tf.transpose(key, [0, 2, 1, 3])
+        value = tf.transpose(value, [0, 2, 1, 3])
+
+        # Compute base attention scores
+        base_scores = tf.matmul(query, key, transpose_b=True)
+        base_scores = base_scores / tf.math.sqrt(tf.cast(self._key_dim, dtype=base_scores.dtype))
+
+        # Extract power values (assuming first feature is power)
+        power_signal = value[:, :, :, 0]  # [batch, num_heads, seq_len]
+
+        # Create power-based attention mask
+        power_mask = tf.cast(power_signal > self.power_threshold, tf.float32)
+        power_mask = tf.expand_dims(power_mask, axis=-2)  # [batch, num_heads, 1, seq_len]
+
+        # Compute power transitions (ON->OFF and OFF->ON)
+        power_transitions = tf.abs(power_signal[:, :, 1:] - power_signal[:, :, :-1])
+        power_transitions = tf.pad(power_transitions, [[0, 0], [0, 0], [0, 1]])
+        transition_mask = tf.cast(power_transitions > self.power_threshold, tf.float32)
+        transition_mask = tf.expand_dims(transition_mask, axis=-2)  # [batch, num_heads, 1, seq_len]
+
+        # Compute event-based attention
+        event_input = tf.reshape(value, [batch_size, seq_len, self._num_heads * self._value_dim])
+        event_features = self.event_encoder(event_input)
+        event_features = tf.reshape(event_features, [batch_size, seq_len, self._num_heads, self._key_dim])
+        event_features = tf.transpose(event_features, [0, 2, 1, 3])  # [batch, num_heads, seq_len, key_dim]
+
+        # Compute event similarity scores
+        event_scores = tf.matmul(event_features, event_features, transpose_b=True)
+        event_scores = event_scores / tf.sqrt(tf.cast(self._key_dim, tf.float32))
+
+        # Combine attention mechanisms
+        combined_scores = (base_scores +
+                           power_mask * 1.0 +
+                           transition_mask * 2.0 +
+                           event_scores * 0.5)
+
+        # Apply attention mask if provided
+        if attention_mask is not None:
+            mask = tf.expand_dims(tf.cast(attention_mask, tf.float32), axis=1)
+            mask = tf.tile(mask, [1, self._num_heads, 1, 1])
+            combined_scores += (1.0 - mask) * -1e9
+
+        # Temperature-scaled softmax
+        attention_weights = tf.nn.softmax(combined_scores / self.temperature, axis=-1)
+
+        if training and self._dropout > 0:
+            attention_weights = tf.nn.dropout(attention_weights, self._dropout)
+
+        # Apply attention weights to values
+        attention_output = tf.matmul(attention_weights, value)  # [batch, num_heads, seq_len, value_dim]
+
+        # Transpose and reshape the output
+        attention_output = tf.transpose(attention_output, [0, 2, 1, 3])
+        attention_output = tf.reshape(attention_output, [batch_size, seq_len, self._num_heads * self._value_dim])
+
+        # Project back to the original dimension
+        attention_output = self.output_dense(attention_output)
+
+        return attention_output, attention_weights
+
+    def call(self, query, value, key=None, attention_mask=None, training=None, return_attention_scores=False):
+        if key is None:
+            key = value
+
+        attention_output, attention_weights = self._compute_attention(
+            query, key, value,
+            attention_mask=attention_mask,
+            training=training
+        )
+
+        if return_attention_scores:
+            return attention_output, attention_weights
+        return attention_output

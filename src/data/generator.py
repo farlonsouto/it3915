@@ -209,8 +209,8 @@ class TimeSeriesDataGenerator(Sequence):
         - np.ndarray: Modified aggregated array with replaced values.
         - np.ndarray: Mask array indicating masked positions.
         """
-        if not self.wandb_config.mlm_mask or self.wandb_config.model != 'bert':
-            # For other models, return a mask of ones
+        if not self.wandb_config.mlm_mask or self.wandb_config.model not in ['bert', 'transformer']:
+            # For either other models or no MLM, return a mask of ones, meaning to compute loss based on all data
             mask = np.ones_like(aggregated)
             assert aggregated.shape == mask.shape, "Shape mismatch between aggregated and mask"
             return aggregated, mask
@@ -332,6 +332,6 @@ class TimeSeriesDataGenerator(Sequence):
                 batch_y.append(y)
                 batch_m.append(m)
 
-        if self.wandb_config.model == 'bert':
+        if self.wandb_config.model in ['bert', 'transformer']:
             return np.array(batch_x), np.array(batch_y), np.array(batch_m)
         return np.array(batch_x), np.array(batch_y)

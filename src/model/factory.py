@@ -5,6 +5,7 @@ from custom.metric.regression import MeanRelativeError
 from .bert4nilm import BERT4NILM
 from .seq2p import Seq2PointNILM
 from .seq2seq import Seq2SeqNILM
+from .transformer import Transformer
 
 
 class ModelFactory:
@@ -33,6 +34,8 @@ class ModelFactory:
             return self.__seq2seq()
         elif model_name == "seq2p":
             return self.__seq2p()
+        elif model_name == "transformer":
+            return self.__transformer()
         else:
             raise Exception("Invalid model name:", model_name)
 
@@ -47,6 +50,10 @@ class ModelFactory:
 
     def __seq2p(self):
         model = Seq2PointNILM(self.wandb_config)
+        return self.__build_compile(model)
+
+    def __transformer(self):
+        model = Transformer(self.wandb_config, self.is_training)
         return self.__build_compile(model)
 
     def __build_compile(self, model):

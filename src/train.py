@@ -36,7 +36,7 @@ timeSeries = TimeSeries(dataset, training_buildings, [2], wandb_config)
 
 m_batch = None
 train_gen = timeSeries.getTrainingDataGenerator()
-if wandb_config.model == 'bert':
+if wandb_config.model in ['bert', 'transformer']:
     X_batch, y_batch, m_batch = train_gen[0]
 else:
     X_batch, y_batch = train_gen[0]

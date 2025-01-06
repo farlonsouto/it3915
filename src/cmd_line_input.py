@@ -6,7 +6,7 @@ def get_args():
     model = None
     args = [sys.argv[0:]]
 
-    for model_name in ['bert', 'seq2seq', 'seq2p']:
+    for model_name in ['bert', 'seq2seq', 'seq2p', 'transformer']:
         if model_name in args[0]:
             model = model_name
 

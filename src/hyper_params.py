@@ -19,21 +19,21 @@ config = {
 
     # Training
     "batch_size": 16,  # Larger for better gradient estimates
-    "epochs": 3,
+    "epochs": 10,
     "learning_rate": 1e-4,  # Higher learning rate with warmup
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
     "temperature": 0.1,
-    "lambda_val": 1.0,  # inside the loss function
+    "lambda_val": 1.0,  # inside the bert4nilm loss function
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
 
     # Input
-    "window_size": 599,  # for UK Dale, 10 time steps mean 1 minute
-    "window_stride": 1,
+    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
+    "window_stride": 60,
     "mlm_mask": False,  # MLM masking for BERT
     "mask_token": -789,
     "masking_portion": 0.25,
-    "add_artificial_activations": True,
+    "add_artificial_activations": False,
     "balance_enabled": False,
     "normalize_aggregated": False,  # min-max, squeezes between 0 and 1
     "normalize_appliance": False,  # min-max, squeezes between 0 and 1
@@ -47,9 +47,9 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 256,  # Reduced to allow for more layers within same compute
-    "num_heads": 2,  # More heads to capture different pattern aspects
-    "num_layers": 2,  # More layers for better pattern recognition
+    "hidden_size": 1024,  # Reduced to allow for more layers within same compute
+    "num_heads": 8,  # More heads to capture different pattern aspects
+    "num_layers": 1,  # More layers for better pattern recognition
     "ff_dim": 512,  # 4x hidden_size as recommended
     "dropout": 0.1,
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
