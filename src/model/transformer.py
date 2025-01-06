@@ -58,7 +58,7 @@ class Transformer(Model):
         self.dense1 = layers.Dense(config['hidden_size'], activation='tanh')
         self.dense2 = layers.Dense(1)  # Output a single value per time step
 
-    def call(self, inputs, training=False, mask=None):
+    def call(self, inputs, training=False, mask=None, return_attention_weights=False):
         # Store attention weights for analysis
         all_attention_weights = []
 
@@ -90,9 +90,12 @@ class Transformer(Model):
         # Output processing
         x = self.final_layer_norm(x)
         x = self.dense1(x)
-        x = self.dense2(x)  # This should now output shape (batch_size, seq_len, 1)
+        x = self.dense2(x)  # Output shape: [batch_size, seq_len, 1]
 
-        return x, all_attention_weights
+        # Return attention weights only if explicitly requested
+        if return_attention_weights:
+            return x, all_attention_weights
+        return x
 
     def train_step(self, data):
         aggregated, y_true, mask = data

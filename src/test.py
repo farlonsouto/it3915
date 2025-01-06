@@ -58,10 +58,21 @@ timeSeries = TimeSeries(dataset, [2], [2], wandb_config)
 test_gen = timeSeries.getTestDataGenerator()
 
 # Evaluate the model on the test data
-results = nn_model.evaluate(test_gen)
-print("\nModel performance on test data:")
-for metric_name, result in zip(nn_model.metrics_names, results):
-    print(f"{metric_name}: {result}")
+if model_name == "transformer":
+    results = nn_model.evaluate(test_gen)  # Only evaluate predictions
+    print("\nModel performance on test data:")
+    for metric_name, result in zip(nn_model.metrics_names, results):
+        print(f"{metric_name}: {result}")
+
+    # Get predictions and attention weights separately for analysis
+    X_test, y_test, _ = next(iter(test_gen))
+    predictions, attention_weights = nn_model(X_test, return_attention_weights=True)
+
+    print("\nExample attention weights:")
+    print(attention_weights[0])  # Print weights for the first layer (as an example)
+else:
+    results = nn_model.evaluate(test_gen)
+
 
 # Get predictions on the test data
 X_test, y_test, _ = next(iter(test_gen))  # Get the first batch of test data
