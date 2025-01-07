@@ -92,16 +92,38 @@ class Transformer(Model):
         x = self.dense1(x)
         x = self.dense2(x)  # Output shape: [batch_size, seq_len, 1]
 
+        # correction factor
+        x = tf.math.scalar_mul(self.config['on_threshold'], x)
+
+        # Constrain the predictions to the possible values the appliance can assume:
+        x = self.constrain_to_valid(x, self.config['appliance'])
+
         # Return attention weights only if explicitly requested
         if return_attention_weights:
             return x, all_attention_weights
+        return x
+
+    def constrain_to_valid(self, x, param):
+        # trying to score more correct OFF states
+        mask = tf.logical_and(tf.math.greater_equal(x, -90.0), tf.less_equal(x, 7.0))
+        x = tf.where(mask, 1.0, x)
+
+        # trying to score more correct ON states at 10 Watts
+        mask = tf.logical_and(tf.math.greater(x, 7.0), tf.less_equal(x, 130.0))
+        x = tf.where(mask, 10.0, x)
+
+        # trying to score more correct ON states around 2k Watts
+        mask = tf.logical_and(tf.math.greater(x, 900.0), tf.less_equal(x, 3000.0))
+        x = tf.where(mask, 1957.0, x)
         return x
 
     def train_step(self, data):
         aggregated, y_true, mask = data
 
         with tf.GradientTape() as tape:
-            predictions, attention_weights = self(aggregated, training=True)
+            # Obtain predictions and attention weights
+            outputs = self(aggregated, training=True, return_attention_weights=True)
+            predictions, attention_weights = outputs
 
             bool_mask = tf.cast(mask, tf.bool)
             y_true_masked = tf.boolean_mask(y_true, bool_mask)

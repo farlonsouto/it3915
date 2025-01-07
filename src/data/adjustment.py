@@ -36,8 +36,8 @@ class Augment:
 
         # Generate artificial ON periods
         np.random.seed(42)  # For reproducibility
-        # About 50% of the time steps are populated with synthetic activations
-        num_activations = len(appliance_power) // (2 * int(mean_on_duration))
+        # About 25% of the time steps are populated with synthetic activations
+        num_activations = len(appliance_power) // (4 * int(mean_on_duration))
 
         for _ in range(int(num_activations)):
             # Randomly sample ON duration

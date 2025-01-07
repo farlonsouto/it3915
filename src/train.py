@@ -56,8 +56,8 @@ print("... The training data is available. Starting training ...")
 
 my_callbacks = [
     # WandbMetricsLogger(log_freq='batch'),
-    EarlyStopping(patience=10, monitor='val_MAE', restore_best_weights=True),
-    ModelCheckpoint('../models/{}_model'.format(model_name), save_best_only=True, monitor='MAE', save_format="tf")
+    EarlyStopping(patience=5, monitor='val_MRE', restore_best_weights=True),
+    ModelCheckpoint('../models/{}_model'.format(model_name), save_best_only=True, monitor='val_MAE', save_format="tf")
 ]
 
 # Train the model and track the training process using WandB

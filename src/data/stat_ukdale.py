@@ -1,9 +1,41 @@
 import json
 
+import numpy as np
 import pandas as pd
 from nilmtk import DataSet
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 from src import hyper_params
+
+
+def cluster_values(values, n_clusters=5):
+    """
+    Cluster the given values using K-means algorithm.
+
+    Parameters:
+    - values: list of values to cluster
+    - n_clusters: number of clusters to create (default: 5)
+
+    Returns:
+    - A list of tuples (value, cluster_label)
+    """
+    # Reshape the data for scikit-learn
+    X = np.array(values).reshape(-1, 1)
+
+    # Standardize the features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Perform K-means clustering
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    cluster_labels = kmeans.fit_predict(X_scaled)
+
+    # Combine original values with their cluster labels
+    clustered_values = list(zip(values, cluster_labels))
+
+    # Sort by value
+    return sorted(clustered_values, key=lambda x: x[0])
 
 
 def compute_stats(appliance_list):
@@ -80,22 +112,26 @@ def compute_stats(appliance_list):
             if nilmtk_appliance:
                 appliance_data = nilmtk_appliance.load()
                 all_appliance_power = []
+                possible_values = set()  # New set to store unique values
 
                 for appliance_df in appliance_data:
                     if ('power', 'active') in appliance_df.columns:
                         appliance_power = appliance_df[('power', 'active')]
                         all_appliance_power.append(appliance_power)
                         appliance_power_global[current_appliance].append(appliance_power)
+                        possible_values.update(appliance_power.unique())  # Add unique values to the set
 
                 if all_appliance_power:
                     combined_appliance_power = pd.concat(all_appliance_power, axis=0)
+                    clustered_values = cluster_values(list(possible_values))
                     appliance_power_building[str(building)][current_appliance] = {
                         "mean": float(combined_appliance_power.mean()),
                         "median": float(combined_appliance_power.median()),
                         "std": float(combined_appliance_power.std()),
                         "min": float(combined_appliance_power.min()),
                         "max": float(combined_appliance_power.max()),
-                        "Quantiles": str(combined_appliance_power.quantile([.25, .5, .75]).values)
+                        "Quantiles": str(combined_appliance_power.quantile([.25, .5, .75]).values),
+                        "possible_values": clustered_values  # Now contains clustered values
                     }
 
     # Compute global stats for all buildings
@@ -131,6 +167,7 @@ def compute_stats(appliance_list):
             global_appliance_power = pd.concat(powers, axis=0)
             mean_on_duration, std_on_duration = calculate_activation_stats(global_appliance_power, on_threshold,
                                                                            min_on_duration)
+            clustered_values = cluster_values(list(set(global_appliance_power.unique())))
             the_entire_dataset_stats['appliance_power'][current_appliance] = {
                 "mean": float(global_appliance_power.mean()),
                 "std": float(global_appliance_power.std()),
@@ -141,7 +178,8 @@ def compute_stats(appliance_list):
                 "ON_std": float(
                     global_appliance_power[global_appliance_power > on_threshold].std()),
                 "ON_duration_mean": mean_on_duration,
-                "ON_duration_std": std_on_duration
+                "ON_duration_std": std_on_duration,
+                "possible_values": clustered_values  # Now contains clustered values
             }
 
     # Return the computed dictionaries
