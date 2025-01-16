@@ -1,56 +1,97 @@
-import tensorflow as tf
-from keras import layers, Model
+from tensorflow.keras import layers, Model
+from tensorflow.python.keras.layers import LSTM
 
 
 class Seq2SeqNILM(Model):
+    """
+        2018 - The 6th IEEE International Conference on Smart Energy Grid Engineering
+        Regularized LSTM Based Deep Learning Model: First Step towards Real-Time Non-Intrusive Load Monitoring
+        Hasan Rafiq, Hengxu Zhang, Huimin Li, Manesh Kumar Ochani
+        School of Electrical Engineering - Shandong University - Jinan, China
+    """
+
     def __init__(self, wandb_config):
         super(Seq2SeqNILM, self).__init__()
         self.hyper_param = wandb_config
+        self.kernel_regularizer = None
+        if self.hyper_param.kernel_regularizer != 'None':
+            self.kernel_regularizer = self.hyper_param.kernel_regularizer
 
-        # Encoder LSTM
-        self.encoder_lstm = layers.LSTM(
-            units=self.hyper_param.hidden_size,
-            return_state=True,
-            return_sequences=True,
+        # 1D Convolution layer for initial feature extraction
+        self.conv1d = layers.Conv1D(
+            filters=16,
+            kernel_size=4,
+            strides=1,
+            padding='same',
+            activation='linear',
             kernel_initializer='truncated_normal',
-            kernel_regularizer='l2'
+            kernel_regularizer=self.kernel_regularizer
         )
 
-        # Decoder LSTM
-        self.decoder_lstm = layers.LSTM(
-            units=self.hyper_param.hidden_size,
-            return_sequences=True,
-            return_state=True,
-            kernel_initializer='truncated_normal',
-            kernel_regularizer='l2'
+        # Input layer with dropout
+        self.input_dropout = layers.Dropout(rate=self.hyper_param.dropout)
+
+        # First Bidirectional LSTM layer with 128 units
+        self.lstm1 = layers.Bidirectional(
+            LSTM(
+                units=128,
+                return_sequences=True,
+                kernel_initializer='truncated_normal',
+                kernel_regularizer=self.kernel_regularizer,
+            ),
+            merge_mode='concat'
         )
 
-        # Dense layer to predict appliance power
+        # Dropout between LSTM layers
+        self.inter_dropout = layers.Dropout(rate=self.hyper_param.dropout)
+
+        # Second Bidirectional LSTM layer with 256 units
+        self.lstm2 = layers.Bidirectional(
+            LSTM(
+                units=256,
+                return_sequences=True,
+                kernel_initializer='truncated_normal',
+                kernel_regularizer=self.kernel_regularizer
+            ),
+            merge_mode='concat'
+        )
+
+        # First dense layer with 256 units
+        self.dense1 = layers.Dense(
+            128,
+            activation='tanh',
+            kernel_initializer='truncated_normal',
+            kernel_regularizer=self.kernel_regularizer
+        )
+
+        # Output dense layer
         self.output_layer = layers.Dense(
             1,
             activation='linear',
             kernel_initializer='truncated_normal',
-            kernel_regularizer='l2'
+            kernel_regularizer=self.kernel_regularizer
         )
 
-    def reverse_sequence(self, inputs):
-        """Reverses the input sequence along the time axis."""
-        return tf.reverse(inputs, axis=[1])
-
     def call(self, inputs, training=None, mask=None):
-        # Reverse the input sequence for the encoder
-        reversed_inputs = self.reverse_sequence(inputs)
+        # Apply 1D convolution
+        x = self.conv1d(inputs)
 
-        # Encoder
-        encoder_outputs, state_h, state_c = self.encoder_lstm(reversed_inputs)
+        # Apply input dropout
+        x = self.input_dropout(x, training=training)
 
-        # Decoder, initialized with the encoder's final states
-        decoder_outputs, _, _ = self.decoder_lstm(encoder_outputs, initial_state=[state_h, state_c])
+        # First Bidirectional LSTM layer
+        x = self.lstm1(x)
+
+        # Inter-layer dropout
+        x = self.inter_dropout(x, training=training)
+
+        # Second Bidirectional LSTM layer
+        x = self.lstm2(x)
+
+        # Dense layer
+        x = self.dense1(x)
 
         # Output predictions
-        pred_appl_power = self.output_layer(decoder_outputs)
+        pred_appl_power = self.output_layer(x)
 
-        # Scale and clip predictions
-        #   pred_appl_power = tf.clip_by_value(pred_appl_power * self.hyper_param.appliance_max_power, 0.0,
-        #                                      self.hyper_param.appliance_max_power)
         return pred_appl_power

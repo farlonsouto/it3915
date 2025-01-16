@@ -4,6 +4,7 @@ from nilmtk import TimeFrame
 from tensorflow.keras.utils import Sequence
 
 from .adjustment import Augment, Balance
+from .masking import apply_mask
 
 
 class TimeSeriesDataGenerator(Sequence):
@@ -21,11 +22,11 @@ class TimeSeriesDataGenerator(Sequence):
     def __init__(self, dataset, buildings, appliance, normalization_params, wandb_config, is_training=True, ):
         self.dataset = dataset
         self.buildings = buildings
-        self.appliance = appliance
+        self.appliance_name = appliance
         self.normalization_params = normalization_params
         self.window_size = wandb_config.window_size
         self.batch_size = wandb_config.batch_size
-        self.max_power = wandb_config.appliance_max_power
+        self.max_appliance_power = wandb_config.appliance_max_power
         self.on_threshold = wandb_config.on_threshold
         self.min_on_duration = wandb_config.min_on_duration
         self.window_stride = wandb_config.window_stride
@@ -36,13 +37,6 @@ class TimeSeriesDataGenerator(Sequence):
         self.masking_portion = wandb_config.masking_portion
         self.data_generator = self._data_generator()
         self.total_samples = self._count_samples()
-        self.clip_value = {
-            'kettle': 16,  # Captures max power of 3200W
-            'fridge': 7,  # Captures max power of 400W
-            'microwave': 28,  # Captures max power of 3000W
-            'dish washer': 11  # Captures max power of 2500W
-        }
-        self.aggregated_clip_value = 13
 
     def _data_generator(self):
         """
@@ -56,9 +50,9 @@ class TimeSeriesDataGenerator(Sequence):
 
             appliance = None
             try:
-                appliance = elec[self.appliance]
+                appliance = elec[self.appliance_name]
             except KeyError:
-                print(f"Appliance {self.appliance} not available in the Building {building}")
+                print(f"Appliance {self.appliance_name} not available in building {building}")
                 continue
 
             # Explicitly considering  only the overlapping period
@@ -94,8 +88,8 @@ class TimeSeriesDataGenerator(Sequence):
                 appliance_power = next(appliance_generator)
 
                 # Performs the pre-processing of the data:
-                aggregated_proc, appliance_proc, mask_proc = self._process_data(mains_power, appliance_power,
-                                                                                ac_type_aggregated)
+                aggregated_proc, appliance_proc, mask_proc = self._preprocess(mains_power, appliance_power,
+                                                                              ac_type_aggregated)
 
                 stride = self.window_size
                 if self.is_training:
@@ -112,7 +106,7 @@ class TimeSeriesDataGenerator(Sequence):
          """
         return pd.Timedelta(self.window_size * 6 * 100, 'seconds')
 
-    def _process_data(self, aggregated, appliance_power, ac_type_aggregated):
+    def _preprocess(self, aggregated, appliance_power, ac_type_aggregated):
         """
         Processes mains and appliance power data, aligns them with tolerance, and applies transformations.
 
@@ -135,14 +129,11 @@ class TimeSeriesDataGenerator(Sequence):
         # Align the series
         aggregated, appliance_power = aggregated.align(appliance_power, join='inner', method='pad', limit=1)
 
-        # mask_observer.py for values to ignore
-        standby_power_mask = appliance_power == 1.0
-        # Apply clipping only where the mask is False
-        appliance_power = appliance_power.where(standby_power_mask,
-                                                appliance_power.clip(lower=self.on_threshold, upper=self.max_power))
+        # Clip between 1.0 and max appliance power
+        appliance_power = appliance_power.clip(lower=1.0, upper=self.max_appliance_power)
 
         # Any data modification or adjustment should take place before the normalization
-        if self.appliance in ['kettle', 'microwave', 'dish washer', 'washer']:
+        if self.appliance_name in ['kettle', 'microwave', 'dish washer', 'washer']:
             # Handling the least used appliances: rarely ON and, when ON, for short periods.
             augment = Augment(self.wandb_config, self.normalization_params)
             balance = Balance(self.wandb_config, self.normalization_params)
@@ -151,99 +142,26 @@ class TimeSeriesDataGenerator(Sequence):
             if self.balance_enabled:
                 aggregated, appliance_power = balance.on_off_periods(aggregated, appliance_power)
 
-        # 1. First standardize the data
-        # Extracted values for better readability
+        # standardize the aggregated readings with z-score normalization
         if self.wandb_config.standardize_aggregated:
             aggregated_mean = self.normalization_params['aggregated'][ac_type_aggregated]['mean']
             aggregated_std = self.normalization_params['aggregated'][ac_type_aggregated]['std']
             aggregated = (aggregated - aggregated_mean) / aggregated_std
-            # 2. Then clip outliers
-            aggregated = aggregated.clip(-self.aggregated_clip_value, self.aggregated_clip_value)
 
+        # standardize the appliance reading with z-score normalization
         if self.wandb_config.standardize_appliance:
-            appliance_mean = self.normalization_params['appliance'][self.appliance]['mean']
-            appliance_std = self.normalization_params['appliance'][self.appliance]['std']
+            appliance_mean = self.normalization_params['appliance'][self.appliance_name]['mean']
+            appliance_std = self.normalization_params['appliance'][self.appliance_name]['std']
             appliance_power = (appliance_power - appliance_mean) / appliance_std
-            # 2. Then clip outliers
-            clip_value = self.clip_value[self.appliance]
-            appliance_power = appliance_power.clip(-clip_value, clip_value)
-
-        # 3. Finally scale to [0,1] range - normalize:
-        if self.wandb_config.normalize_aggregated:
-            if self.wandb_config.standardize_aggregated:
-                aggregated = (aggregated + self.aggregated_clip_value) / (2 * self.aggregated_clip_value)
-            else:
-                aggregated_min = self.normalization_params["aggregated"][ac_type_aggregated]['min']
-                aggregated_max = self.normalization_params["aggregated"][ac_type_aggregated]['max']
-                aggregated = (aggregated - aggregated_min) / (aggregated_max - aggregated_min)
-
-        if self.wandb_config.normalize_appliance:
-            if self.wandb_config.standardize_appliance:
-                clip_value = self.clip_value[self.appliance]
-                appliance_power = (appliance_power + clip_value) / (2 * clip_value)
-            else:
-                appl_min = self.normalization_params["appliance"][self.appliance]['min']
-                appl_max = self.normalization_params["appliance"][self.appliance]['max']
-                appliance_power = (appliance_power - appl_min) / (appl_max - appl_min)
 
         # Drops the DatetimeIndex: The indexed series turn into a numpy ndarray
         appliance_power = appliance_power.values.reshape(-1, 1)
         aggregated = aggregated.values.reshape(-1, 1)
 
-        masked_aggregated, mask = self.apply_mask(aggregated, float(self.masking_portion),
-                                                  float(self.wandb_config.mask_token))
+        masked_aggregated, mask = apply_mask(self.wandb_config, aggregated, float(self.masking_portion),
+                                             float(self.wandb_config.mask_token))
 
         return masked_aggregated, appliance_power, mask
-
-    def apply_mask(self, aggregated, masking_portion, masking_token):
-        """
-        Replace a given percentage of the aggregated array with a specific masking value.
-        The masked positions are the ones to be considered for loss computation in MLM.
-
-        Parameters:
-        - aggregated (np.ndarray): Input array, aggregated readings
-        - masking_portion (float): Percentage of elements to replace (0 <= p <= 1).
-        - masking_token (scalar): Value to replace with.
-
-        Returns:
-        - np.ndarray: Modified aggregated array with replaced values.
-        - np.ndarray: Mask array indicating masked positions.
-        """
-        if not self.wandb_config.mlm_mask or self.wandb_config.model not in ['bert', 'transformer']:
-            # For either other models or no MLM, return a mask of ones, meaning to compute loss based on all data
-            mask = np.ones_like(aggregated)
-            assert aggregated.shape == mask.shape, "Shape mismatch between aggregated and mask"
-            return aggregated, mask
-
-        # Flatten the aggregated array for easier manipulation
-        flat_aggregated = aggregated.ravel()
-        num_elements = flat_aggregated.size
-        num_to_replace = int(num_elements * masking_portion)
-
-        # Handle edge cases
-        if num_to_replace <= 0:
-            mask = np.ones_like(aggregated)
-            assert aggregated.shape == mask.shape, "Shape mismatch between aggregated and mask"
-            return aggregated, mask
-
-        # Generate random indices for replacement
-        replace_indices = np.random.choice(num_elements, size=num_to_replace, replace=False)
-
-        # Initialize a flat mask array and mark replacement indices
-        flat_mask = np.zeros_like(flat_aggregated)
-        flat_mask[replace_indices] = 1.0
-
-        # Apply the masking token at the chosen indices
-        flat_aggregated[replace_indices] = masking_token
-
-        # Reshape back to the original aggregated shape
-        modified_aggregated = flat_aggregated.reshape(aggregated.shape)
-        mask = flat_mask.reshape(aggregated.shape)
-
-        # Final assertion to ensure shapes match
-        assert modified_aggregated.shape == mask.shape, "Shape mismatch between modified_aggregated and mask"
-
-        return modified_aggregated, mask
 
     def _count_samples(self):
         """
@@ -256,7 +174,7 @@ class TimeSeriesDataGenerator(Sequence):
             mains = elec.mains()
             appliance = None
             try:
-                appliance = elec[self.appliance]
+                appliance = elec[self.appliance_name]
             except KeyError:
                 continue
 
@@ -308,9 +226,12 @@ class TimeSeriesDataGenerator(Sequence):
             A tuple of ((batch x,batch mask), batch y)
         """
         batch_x, batch_y, batch_m = [], [], []
-        for _ in range(self.batch_size):
+        batch_fill_up = 0
+        while True:
             try:
                 x, y, m = next(self.data_generator)
+
+                # Adjust for Seq2Point
                 if self.wandb_config.model == 'seq2p':
                     midpoint = len(y) // 2
                     y = y[midpoint]
@@ -318,19 +239,11 @@ class TimeSeriesDataGenerator(Sequence):
                 batch_x.append(x)
                 batch_y.append(y)
                 batch_m.append(m)
-
-            except StopIteration:
-                # Reset the generator and fetch the next batch
-                self.data_generator = self._data_generator()
-                x, y, m = next(self.data_generator)
-
-                if self.wandb_config.model == 'seq2p':
-                    midpoint = len(y) // 2
-                    y = y[midpoint]
-
-                batch_x.append(x)
-                batch_y.append(y)
-                batch_m.append(m)
+                batch_fill_up += 1
+            except StopIteration as e:
+                print("StopIteration error: {}", e)
+            if batch_fill_up == self.batch_size:
+                break
 
         if self.wandb_config.model in ['bert', 'transformer']:
             return np.array(batch_x), np.array(batch_y), np.array(batch_m)

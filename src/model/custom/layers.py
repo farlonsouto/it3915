@@ -3,22 +3,33 @@ from tensorflow.keras import layers
 
 
 class LearnedL2NormPooling(layers.Layer):
-    def __init__(self, kernel_size=2, strides=2):
+    def __init__(self, kernel_size=2, strides=2, epsilon=1e-6):
         super(LearnedL2NormPooling, self).__init__()
         self.kernel_size = kernel_size
         self.strides = strides
+        self.epsilon = epsilon
 
     def build(self, input_shape):
         self.alpha = self.add_weight(
             'alpha',
             shape=[1],
-            initializer='ones',
+            initializer=tf.keras.initializers.Constant(1.0),  # Start with 1
+            constraint=tf.keras.constraints.NonNeg(),  # Ensure alpha stays positive
             trainable=True
         )
 
     def call(self, inputs, **kwargs):
+        # Add debugging
+        tf.debugging.check_numerics(inputs, 'Input to L2Pool')
+
+        # Clip inputs to prevent extreme values
+        x = tf.clip_by_value(inputs, -1e4, 1e4)
+
         # Square the inputs
-        x = tf.square(inputs)
+        x = tf.square(x)
+
+        # Check after square
+        tf.debugging.check_numerics(x, 'After square in L2Pool')
 
         # Apply average pooling to squared values
         x = tf.nn.avg_pool1d(
@@ -28,8 +39,14 @@ class LearnedL2NormPooling(layers.Layer):
             padding='VALID'
         )
 
-        # Apply learned scale and square root
-        return tf.sqrt(x * self.alpha)
+        # Check after pooling
+        tf.debugging.check_numerics(x, 'After pooling in L2Pool')
+
+        # Apply learned scale and square root with epsilon
+        x = x * tf.maximum(self.alpha, self.epsilon)
+        x = tf.sqrt(tf.maximum(x, self.epsilon))
+
+        return x
 
 
 class TransformerBlock(layers.Layer):
@@ -63,6 +80,34 @@ class TransformerBlock(layers.Layer):
 
 
 class PowerAwareAttention(layers.MultiHeadAttention):
+    """
+    PowerAwareAttention leverages the attention mechanism specifically tailored for Non-Intrusive Load Monitoring (NILM)
+    tasks. This class introduces a power-awareness mechanism that integrates power consumption thresholds and power
+    state transitions to enhance the disaggregation process.
+
+    Key Features:\n
+    1. **Base Attention Mechanism**: Extends the standard multi-head attention to capture temporal dependencies in power data.
+    2. **Power Threshold Masking**: Dynamically adjusts attention scores based on whether power values exceed a specified threshold.
+    3. **Transition Detection**: Highlights sudden changes in power states (ON to OFF or OFF to ON) and uses them to adjust attention scores.
+    4. **Event-Based Attention**: Encodes and computes similarity scores for power events, reinforcing the attention mechanism where
+       significant power transitions or events occur.
+    5. **Combined Attention Scores**: The final attention scores are a combination of base attention, power-based masking,
+       transition-based weighting, and event-based similarity, which makes the mechanism more robust for NILM tasks.
+
+    Parameters:
+    - num_heads: Number of attention heads.
+    - key_dim: Size of each attention head for queries and keys.
+    - power_threshold: Power value threshold for creating the power-based mask.
+    - value_dim: Size of each attention head for values (default is key_dim).
+    - dropout: Dropout rate for attention weights.
+    - use_bias: Whether to use bias in attention layers.
+    - output_shape: Desired output shape of the attention layer.
+    - attention_axes: Axes over which the attention is applied.
+
+    This class improves NILM disaggregation by focusing attention on key power events and transitions, providing better appliance-level
+    separation and reducing noise in the aggregated power data.
+    """
+
     def __init__(
             self,
             num_heads,
@@ -73,6 +118,7 @@ class PowerAwareAttention(layers.MultiHeadAttention):
             use_bias=True,
             output_shape=None,
             attention_axes=None,
+            kernel_regularizer=None,
             **kwargs
     ):
         super(PowerAwareAttention, self).__init__(
@@ -83,8 +129,11 @@ class PowerAwareAttention(layers.MultiHeadAttention):
             use_bias=use_bias,
             output_shape=output_shape,
             attention_axes=attention_axes,
+            kernel_regularizer=kernel_regularizer,
             **kwargs
         )
+
+        self.kernel_regularizer = kernel_regularizer
         self.power_threshold = power_threshold
 
         # Ensure value_dim is set

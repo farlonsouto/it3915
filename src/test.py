@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 import wandb
 from nilmtk import DataSet
@@ -9,7 +8,6 @@ from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_model_appliance
 from model.factory import ModelFactory
-from plotter import plot_comparison
 
 # Set GPU memory growth
 set_gpu_memory_growth()
@@ -27,7 +25,7 @@ wandb_config = wandb.config
 try:
     nn_model = tf.keras.models.load_model('../models/{}_model'.format(model_name))
 except Exception as e:
-    print("""Error loading the model: """, e)
+    print("Error loading the model: ", e)
     print("Trying to rebuild the model and load weights...")
 
     # Rebuild the model
@@ -57,43 +55,7 @@ timeSeries = TimeSeries(dataset, [2], [2], wandb_config)
 
 test_gen = timeSeries.getTestDataGenerator()
 
-# Evaluate the model on the test data
-if model_name == "transformer":
-    results = nn_model.evaluate(test_gen)  # Only evaluate predictions
-    print("\nModel performance on test data:")
-    for metric_name, result in zip(nn_model.metrics_names, results):
-        print(f"{metric_name}: {result}")
-
-    # Get predictions and attention weights separately for analysis
-    X_test, y_test, _ = next(iter(test_gen))
-    predictions, attention_weights = nn_model(X_test, return_attention_weights=True)
-
-    print("\nExample attention weights:")
-    print(attention_weights[0])  # Print weights for the first layer (as an example)
-else:
-    results = nn_model.evaluate(test_gen)
-
-
-# Get predictions on the test data
-X_test, y_test, _ = next(iter(test_gen))  # Get the first batch of test data
-predictions = nn_model.predict(X_test)
-
-# Print example predictions
-print("\nExample predictions:")
-for i in range(5):  # Print the first 5 samples
-    print(f"Input: {X_test[i].flatten()}")
-    print(f"True appliance power: {y_test[i].flatten()}")
-    print(f"Predicted appliance power: {predictions[i].flatten()}")
-    print("----")
-
-# Plot the comparison
-plot_comparison(test_gen, nn_model)
-
-# Print some statistics
-print("\nStatistics:")
-print(f"Ground Truth - Min: {np.min(y_test):.2f}, Max: {np.max(y_test):.2f}, Mean: {np.mean(y_test):.2f}")
-print(f"Predicted - Min: {np.min(predictions):.2f}, Max: {np.max(predictions):.2f}, Mean: {np.mean(predictions):.2f}")
-print(f"Mean Absolute Error: {np.mean(np.abs(y_test - predictions)):.2f}")
+nn_model.evaluate(test_gen)
 
 # Finish the WandB run
 wandb.finish()

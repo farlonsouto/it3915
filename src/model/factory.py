@@ -1,5 +1,7 @@
 import tensorflow as tf
 from custom.loss.bert4nilm import LossFunction
+from custom.loss.seq2p_loss import Seq2PointLoss
+from custom.loss.seq2seq_loss import Seq2SeqLoss
 from custom.metric.regression import MeanRelativeError
 
 from .bert4nilm import BERT4NILM
@@ -24,7 +26,9 @@ class ModelFactory:
         self.loss_fn_mapping = {
             "mse": tf.keras.losses.MeanSquaredError(),
             "mae": tf.keras.losses.MeanAbsoluteError(),
-            "bert4nilm_loss": LossFunction(wandb_config)
+            "bert4nilm_loss": LossFunction(wandb_config),
+            "seq2p_loss": Seq2PointLoss(),
+            "seq2seq_loss": Seq2SeqLoss()
         }
 
     def create_model(self, model_name):

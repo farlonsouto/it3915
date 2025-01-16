@@ -6,7 +6,7 @@ class Augment:
 
     def __init__(self, wandb_config, normalization_params):
         self.on_threshold = wandb_config.on_threshold
-        self.appliance_name = wandb_config.appliance
+        self.appliance_name = wandb_config.appliance_name
         self.min_on_duration = wandb_config.min_on_duration
         self.max_power = wandb_config.appliance_max_power
         self.normalization_params = normalization_params
@@ -37,7 +37,7 @@ class Augment:
         # Generate artificial ON periods
         np.random.seed(42)  # For reproducibility
         # About 25% of the time steps are populated with synthetic activations
-        num_activations = len(appliance_power) // (4 * int(mean_on_duration))
+        num_activations = len(appliance_power) // (2 * int(mean_on_duration))
 
         for _ in range(int(num_activations)):
             # Randomly sample ON duration

@@ -1,3 +1,4 @@
+import keras.layers
 import tensorflow as tf
 from tensorflow.keras import Model, layers
 
@@ -49,7 +50,7 @@ class BERT4NILM(Model):
             ) for _ in range(config['num_layers'])
         ]
 
-        # Rest of the layers remain the same...
+        # DeConv layer
         self.deconv = layers.Conv1DTranspose(
             filters=config['hidden_size'],
             kernel_size=config['deconv_kernel_size'],
@@ -59,13 +60,17 @@ class BERT4NILM(Model):
             kernel_regularizer="l1_l2"
         )
 
-        self.dense1 = layers.Dense(config['hidden_size'], activation='tanh')
-        self.dense2 = layers.Dense(config['output_size'])
+        self.dense1 = layers.Dense(config['hidden_size'], activation='linear')
+        self.dense2 = layers.Dense(config['output_size'], activation='tanh')
 
     def call(self, inputs, training=False, mask=None):
+        tf.debugging.check_numerics(inputs, 'inputs contains NaNs values')
+
         # Embedding module
         x = self.conv1d(inputs)  # inputs already has shape (batch_size, window_size, 1)
         x = self.l2_pool(x)
+        tf.debugging.check_numerics(x, 'contains NaNs after L2 pool')
+
 
         # Add positional embedding
         x_token = x
@@ -82,9 +87,18 @@ class BERT4NILM(Model):
         # Permute back for deconv (matching PyTorch's permute operations)
         x = self.deconv(x)
 
-        # Output module with tanh activation (matching the original PyTorch impl)
-        x = tf.tanh(self.dense1(x))
+        # Output module with tanh activation in between
+        tf.debugging.check_numerics(x, 'contains NaNs before Dense 1')
+
+        x = self.dense1(x)
+
+        tf.debugging.check_numerics(x, 'contains NaNs before desne 2')
+
         x = self.dense2(x)
+
+        tf.debugging.check_numerics(x, 'contains NaNs before mul')
+        x = tf.math.scalar_mul(self.config['appliance_max_power'], x)
+        tf.debugging.check_numerics(x, 'contains NaNs AFTER mul')
 
         return x
 

@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -9,19 +10,23 @@ from sklearn.preprocessing import StandardScaler
 from src import hyper_params
 
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
+
+
 def cluster_values(values, n_clusters=5):
-    """
-    Cluster the given values using K-means algorithm.
+    # Count the frequency of each value
+    value_counts = pd.Series(values).value_counts()
 
-    Parameters:
-    - values: list of values to cluster
-    - n_clusters: number of clusters to create (default: 5)
-
-    Returns:
-    - A list of tuples (value, cluster_label)
-    """
     # Reshape the data for scikit-learn
-    X = np.array(values).reshape(-1, 1)
+    X = np.array(value_counts.index).reshape(-1, 1)
 
     # Standardize the features
     scaler = StandardScaler()
@@ -31,11 +36,22 @@ def cluster_values(values, n_clusters=5):
     kmeans = KMeans(n_clusters=n_clusters, random_state=42)
     cluster_labels = kmeans.fit_predict(X_scaled)
 
-    # Combine original values with their cluster labels
-    clustered_values = list(zip(values, cluster_labels))
+    # Combine original values with their cluster labels and frequencies
+    clustered_values = list(zip(value_counts.index, cluster_labels, value_counts.values))
+
+    # Group values by cluster
+    cluster_groups = defaultdict(list)
+    for value, cluster, freq in clustered_values:
+        cluster_groups[cluster].append((value, freq))
+
+    # Select top 3 most frequent values for each cluster
+    result = []
+    for cluster, values in cluster_groups.items():
+        top_3 = sorted(values, key=lambda x: x[1], reverse=True)[:3]
+        result.extend((float(value), int(cluster)) for value, _ in top_3)
 
     # Sort by value
-    return sorted(clustered_values, key=lambda x: x[0])
+    return sorted(result, key=lambda x: x[0])
 
 
 def compute_stats(appliance_list):
@@ -123,7 +139,8 @@ def compute_stats(appliance_list):
 
                 if all_appliance_power:
                     combined_appliance_power = pd.concat(all_appliance_power, axis=0)
-                    clustered_values = cluster_values(list(possible_values))
+                    possible_values = combined_appliance_power.unique()
+                    clustered_values = cluster_values(possible_values)
                     appliance_power_building[str(building)][current_appliance] = {
                         "mean": float(combined_appliance_power.mean()),
                         "median": float(combined_appliance_power.median()),
@@ -131,7 +148,7 @@ def compute_stats(appliance_list):
                         "min": float(combined_appliance_power.min()),
                         "max": float(combined_appliance_power.max()),
                         "Quantiles": str(combined_appliance_power.quantile([.25, .5, .75]).values),
-                        "possible_values": clustered_values  # Now contains clustered values
+                        "possible_values": clustered_values
                     }
 
     # Compute global stats for all buildings
@@ -226,11 +243,11 @@ active_building, apparent_building, appliance_building, global_stats = compute_s
     ['fridge', 'kettle', 'washer', 'microwave', 'dish washer'])
 
 print("Aggregated Active Power Stats per building with Quantiles [25%, 50%, 75%]:")
-print(json.dumps(active_building, indent=4))
+print(json.dumps(active_building, indent=4, cls=NumpyEncoder))
 print("Aggregated Apparent Power Stats per building  with Quantiles [25%, 50%, 75%]:")
-print(json.dumps(apparent_building, indent=4))
+print(json.dumps(apparent_building, indent=4, cls=NumpyEncoder))
 print("Appliance Active Power Stats per building  with Quantiles [25%, 50%, 75%]:")
-print(json.dumps(appliance_building, indent=4))
+print(json.dumps(appliance_building, indent=4, cls=NumpyEncoder))
 
 print("Global Stats Across All Buildings:")
-print(json.dumps(global_stats, indent=4))
+print(json.dumps(global_stats, indent=4, cls=NumpyEncoder))

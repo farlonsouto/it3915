@@ -1,42 +1,26 @@
 # Initialize WandB for tracking
 
-# The article doesn't specify a single on_threshold value for all appliances. Instead, it mentions different
-# on-thresholds for various appliances in Table 1. For example:
-
-# - Fridge: 50W
-# - Washer: 20W
-# - Microwave: 200W
-# - Dishwasher: 10W
-# - Kettle: 2000W
-
-# These values are specific to each appliance and are used to determine when an appliance is considered to be in the
-# "on" state. In the context of the 'kettle' appliance that was used in the example, the correct on_threshold should be
-# 2000W, not 50W. To correct this, we should modify the WandB configuration in the runner script to use the appropriate
-# on_threshold for each appliance:
-
-
 config = {
 
     # Training
-    "batch_size": 16,  # Larger for better gradient estimates
-    "epochs": 10,
+    "batch_size": 32,  # Larger for better gradient estimates
+    "epochs": 5,
     "learning_rate": 1e-4,  # Higher learning rate with warmup
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
     "temperature": 0.1,
     "lambda_val": 1.0,  # inside the bert4nilm loss function
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
+    "continuation": False,  # If it is the continuation of a previous training. True at the MLM 2nd run, without mask
 
     # Input
-    "window_size": 480,  # for UK Dale, 10 time steps mean 1 minute
-    "window_stride": 120,
-    "mlm_mask": False,  # MLM masking for BERT
-    "mask_token": -77000.0,
+    "window_size": 512,  # for UK Dale, 10 time steps mean 1 minute
+    "window_stride": 1,
+    "mlm_mask": True,  # MLM masking for BERT
+    "mask_token": -3100.0,
     "masking_portion": 0.25,
     "add_artificial_activations": False,
     "balance_enabled": False,
-    "normalize_aggregated": False,  # min-max, squeezes between 0 and 1
-    "normalize_appliance": False,  # min-max, squeezes between 0 and 1
     "standardize_aggregated": True,  # z-score, Uses mean and std: x = (x - x_mean) / x_std
     "standardize_appliance": False,  # z-score, Uses mean and std: y = (y - y_mean) / y_std
 
@@ -49,17 +33,20 @@ config = {
     # Transformer
     "hidden_size": 256,  # Reduced to allow for more layers within same compute
     "num_heads": 2,  # More heads to capture different pattern aspects
-    "num_layers": 1,  # More layers for better pattern recognition
-    "ff_dim": 128,  # 4x hidden_size as recommended
-    "dropout": 0.1,
+    "num_layers": 2,  # Also for seq2seq LSTMs
+    "ff_dim": 128,  # 4x hidden_size is the recommended
+    "dropout": 0.1,  # Applies also to the seq2seq LSTM
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
-    "dense_activation": "relu",  # Originally GELU
+    "dense_activation": "gelu",
+
+    # Kernel regularization
+    "kernel_regularizer": "None",  # For all architectures
 
     # Deconvolution layer
     "deconv_kernel_size": 4,
     "deconv_strides": 2,
     "deconv_padding": 1,
-    "deconv_activation": "relu",
+    "deconv_activation": "linear",
 
     # Dimension (number of features) in the output layer
     "output_size": 1,
@@ -68,17 +55,17 @@ config = {
 
 def for_model_appliance(model_name, appliance_name) -> dict:
     # Initialize the configuration dictionary
-    config["appliance"] = appliance_name
+    config["appliance_name"] = appliance_name
     config["model"] = model_name
 
     # Set the appliance-specific configuration
     if appliance_name == "kettle":
         config.update({
             "lambda_val": 1.0,
-            "appliance_max_power": 3200,
-            "on_threshold": 2000,
-            "min_on_duration": 0,
-            "min_off_duration": 12,
+            "appliance_max_power": 3100.00,
+            "on_threshold": 2000.0,
+            "min_on_duration": 12,
+            "min_off_duration": 0,
         })
     elif appliance_name == "fridge":
         config.update({
