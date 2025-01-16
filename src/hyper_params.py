@@ -4,14 +4,14 @@ config = {
 
     # Training
     "batch_size": 32,  # Larger for better gradient estimates
-    "epochs": 5,
+    "epochs": 3,
     "learning_rate": 1e-4,  # Higher learning rate with warmup
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
     "temperature": 0.1,
     "lambda_val": 1.0,  # inside the bert4nilm loss function
     "num_features": 1,  # The aggregated power readings, AC type; hour, minute, second; appliance status, etc
-    "continuation": False,  # If it is the continuation of a previous training. True at the MLM 2nd run, without mask
+    "continuation": True,  # If it is the continuation of a previous training. True at the MLM 2nd run, without mask
 
     # Input
     "window_size": 512,  # for UK Dale, 10 time steps mean 1 minute

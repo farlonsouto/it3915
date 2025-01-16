@@ -5,6 +5,9 @@ from nilmtk import DataSet
 from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from cmd_line_input import get_args
+from custom.loss.bert4nilm import LossFunction
+from custom.loss.seq2p_loss import Seq2PointLoss
+from custom.loss.seq2seq_loss import Seq2SeqLoss
 from custom.metric.regression import MeanRelativeError
 from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
@@ -24,6 +27,15 @@ wandb.init(
 # Retrieve the configuration from WandB
 wandb_config = wandb.config
 
+# Mapping the loss function from WandB configuration to TensorFlow's predefined loss functions
+loss_fn_mapping = {
+    "mse": tf.keras.losses.MeanSquaredError(),
+    "mae": tf.keras.losses.MeanAbsoluteError(),
+    "bert4nilm_loss": LossFunction(wandb_config),
+    "seq2p_loss": Seq2PointLoss(),
+    "seq2seq_loss": Seq2SeqLoss()
+}
+
 if wandb_config.continuation:
     try:
         nn_model = tf.keras.models.load_model('../models/{}_model'.format(model_name))
@@ -38,8 +50,18 @@ if wandb_config.continuation:
         nn_model.load_weights('../models/{}_model'.format(model_name))
         print("Model architecture rebuilt and weights loaded successfully!")
 
+        # Reinitialize the optimizer
+        optimus = tf.keras.optimizers.Adam(
+            learning_rate=wandb_config.learning_rate,
+            clipnorm=1.0,  # gradient clipping
+            clipvalue=0.5
+        )
+
         # Compile the model for evaluation
         nn_model.compile(
+            optimizer=optimus,
+            loss=loss_fn_mapping.get(wandb_config.loss,
+                                     tf.keras.losses.MeanSquaredError()),
             metrics=[
                 MeanRelativeError(name='MRE'),
                 tf.keras.metrics.MeanAbsoluteError(name='MAE')

@@ -19,18 +19,10 @@ class LearnedL2NormPooling(layers.Layer):
         )
 
     def call(self, inputs, **kwargs):
-        # Add debugging
-        tf.debugging.check_numerics(inputs, 'Input to L2Pool')
-
         # Clip inputs to prevent extreme values
         x = tf.clip_by_value(inputs, -1e4, 1e4)
-
         # Square the inputs
         x = tf.square(x)
-
-        # Check after square
-        tf.debugging.check_numerics(x, 'After square in L2Pool')
-
         # Apply average pooling to squared values
         x = tf.nn.avg_pool1d(
             x,
@@ -38,9 +30,6 @@ class LearnedL2NormPooling(layers.Layer):
             strides=self.strides,
             padding='VALID'
         )
-
-        # Check after pooling
-        tf.debugging.check_numerics(x, 'After pooling in L2Pool')
 
         # Apply learned scale and square root with epsilon
         x = x * tf.maximum(self.alpha, self.epsilon)

@@ -67,10 +67,9 @@ class BERT4NILM(Model):
         tf.debugging.check_numerics(inputs, 'inputs contains NaNs values')
 
         # Embedding module
-        x = self.conv1d(inputs)  # inputs already has shape (batch_size, window_size, 1)
-        x = self.l2_pool(x)
-        tf.debugging.check_numerics(x, 'contains NaNs after L2 pool')
+        x = self.conv1d(inputs)  # The inputs already have the shape (batch_size, window_size, 1)
 
+        x = self.l2_pool(x)
 
         # Add positional embedding
         x_token = x
@@ -88,17 +87,11 @@ class BERT4NILM(Model):
         x = self.deconv(x)
 
         # Output module with tanh activation in between
-        tf.debugging.check_numerics(x, 'contains NaNs before Dense 1')
-
         x = self.dense1(x)
-
-        tf.debugging.check_numerics(x, 'contains NaNs before desne 2')
 
         x = self.dense2(x)
 
-        tf.debugging.check_numerics(x, 'contains NaNs before mul')
         x = tf.math.scalar_mul(self.config['appliance_max_power'], x)
-        tf.debugging.check_numerics(x, 'contains NaNs AFTER mul')
 
         return x
 
