@@ -53,8 +53,7 @@ if wandb_config.continuation:
         # Reinitialize the optimizer
         optimus = tf.keras.optimizers.Adam(
             learning_rate=wandb_config.learning_rate,
-            clipnorm=1.0,  # gradient clipping
-            clipvalue=0.5
+            clipnorm=1.0  # gradient clipping
         )
 
         # Compile the model for evaluation
@@ -76,13 +75,21 @@ nn_model.summary()
 path_to_dataset = '../datasets/ukdale.h5'
 print("Fetching data from the dataset located at ", path_to_dataset)
 dataset = DataSet(path_to_dataset)
-
+dataset.set_window(start="09-11-2011", end="25-03-2017")
 # time series handler for the UK Dale dataset
-training_buildings = [1]
-timeSeries = TimeSeries(dataset, training_buildings, [2], wandb_config)
+training_buildings = [1, 3, 4, 5]
+training_data = TimeSeries(dataset, training_buildings, [1], wandb_config)
+
+# Building 1
+#   Training: 09/11/2011 to 25/03/2017
+# Validation: 26/03/2017 to 26/04/2017
+validation_dataset = DataSet(path_to_dataset)
+validation_dataset.set_window(start="26-03-2017", end="26-04-2017")
+# time series handler for the UK Dale dataset
+validation_data = TimeSeries(dataset, [1], [1], wandb_config)
 
 m_batch = None
-train_gen = timeSeries.getTrainingDataGenerator()
+train_gen = training_data.getTrainingDataGenerator()
 if wandb_config.model in ['bert', 'transformer']:
     X_batch, y_batch, m_batch = train_gen[0]
 else:
@@ -109,9 +116,9 @@ my_callbacks = [
 
 # Train the model and track the training process using WandB
 history = nn_model.fit(
-    timeSeries.getTrainingDataGenerator(),
+    training_data.getTrainingDataGenerator(),
     epochs=wandb_config.epochs,
-    validation_data=timeSeries.getTestDataGenerator(),
+    validation_data=validation_data.getTestDataGenerator(),
     callbacks=my_callbacks
 )
 

@@ -49,11 +49,10 @@ print("Model loaded successfully!")
 
 # Load the dataset
 dataset = DataSet('../datasets/ukdale.h5')
+# time series handler for the UK Dale dataset
+test_data = TimeSeries(dataset, [2], [2], wandb_config)
 
-# Prepare the test data generator
-timeSeries = TimeSeries(dataset, [2], [2], wandb_config)
-
-test_gen = timeSeries.getTestDataGenerator()
+test_gen = test_data.getTestDataGenerator()
 
 nn_model.evaluate(test_gen)
 

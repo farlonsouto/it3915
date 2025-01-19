@@ -18,8 +18,7 @@ class ModelFactory:
 
         self.optimizer = tf.keras.optimizers.Adam(
             learning_rate=wandb_config.learning_rate,
-            clipnorm=1.0,  # gradient clipping
-            clipvalue=0.5
+            clipnorm=1.0  # gradient clipping
         )
 
         # Mapping the loss function from WandB configuration to TensorFlow's predefined loss functions

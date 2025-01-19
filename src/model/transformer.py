@@ -10,12 +10,22 @@ class Transformer(Model):
         self.config = config
         self.is_training = is_training
 
-        self.kernel_regularizer = None
-        if config['kernel_regularizer'] is not 'None':
-            self.kernel_regularizer = config['kernel_regularizer']
+        # Modified dimensions to ensure compatibility
+        self.power_feature_dim = config['hidden_size'] // 4
+        self.main_feature_dim = config['hidden_size'] - self.power_feature_dim
 
-        # Input embedding layer
-        self.input_embedding = layers.Dense(config['hidden_size'], kernel_regularizer=self.kernel_regularizer)
+        # Power signal preprocessing - reduced dimension
+        self.power_preprocessor = layers.Dense(
+            self.power_feature_dim,
+            activation='relu',
+            name='power_preprocessor'
+        )
+
+        # Main embedding for all features including power
+        self.main_embedding = layers.Dense(
+            self.main_feature_dim,
+            name='main_embedding'
+        )
 
         # Positional encoding
         self.pos_embedding = self.add_weight(
@@ -24,84 +34,89 @@ class Transformer(Model):
             initializer=tf.keras.initializers.TruncatedNormal(stddev=0.02)
         )
 
-        # Initial normalization and dropout
-        self.layer_norm1 = layers.LayerNormalization(epsilon=config['layer_norm_epsilon'])
-        self.dropout1 = layers.Dropout(config['dropout'])
+        # Layer normalization and dropout
+        self.layer_norm = layers.LayerNormalization(epsilon=config['layer_norm_epsilon'])
+        self.dropout = layers.Dropout(config['dropout'])
 
-        # Power-aware attention layers and regular transformer components
+        # Power-aware attention layers and transformer components
         self.power_attention_layers = []
         self.ff_layers = []
         self.layer_norms1 = []
         self.layer_norms2 = []
 
         for _ in range(config['num_layers']):
-            # Power-aware attention
             self.power_attention_layers.append(
                 PowerAwareAttention(
                     num_heads=config['num_heads'],
                     key_dim=config['hidden_size'] // config['num_heads'],
-                    value_dim=config['hidden_size'] // config['num_heads'],
                     power_threshold=config['on_threshold'],
                     dropout=config['dropout']
                 )
             )
 
-            # Feed-forward network
             self.ff_layers.append([
                 layers.Dense(config['ff_dim'], activation="relu"),
                 layers.Dropout(config['dropout']),
                 layers.Dense(config['hidden_size'])
             ])
 
-            # Layer normalizations
             self.layer_norms1.append(layers.LayerNormalization(epsilon=config['layer_norm_epsilon']))
             self.layer_norms2.append(layers.LayerNormalization(epsilon=config['layer_norm_epsilon']))
 
         # Output layers
         self.final_layer_norm = layers.LayerNormalization(epsilon=config['layer_norm_epsilon'])
-        self.dense1 = layers.Dense(config['hidden_size'], activation='tanh')
-        self.dense2 = layers.Dense(1)  # Output a single value per time step
+        self.dense1 = layers.Dense(config['hidden_size'], activation='relu')
+        self.dense2 = layers.Dense(1, activation='relu')
 
     def call(self, inputs, training=False, mask=None, return_attention_weights=False):
-        # Store attention weights for analysis
-        all_attention_weights = []
+        # Extract power signal
+        power_signal = inputs[:, :, 0:1]  # [batch, seq_len, 1]
 
-        # Initial embedding
-        x = self.input_embedding(inputs)
+        # Process power signal
+        power_features = self.power_preprocessor(power_signal)  # [batch, seq_len, power_feature_dim]
+
+        # Main embedding for all features
+        main_features = self.main_embedding(inputs)  # [batch, seq_len, main_feature_dim]
+
+        # Combine features
+        x = tf.concat([main_features, power_features], axis=-1)  # [batch, seq_len, hidden_size]
+
+        # Add positional encoding
         x += self.pos_embedding
 
-        # Initial normalization and dropout
-        x = self.layer_norm1(x)
-        x = self.dropout1(x, training=training or self.is_training)
+        # Apply normalization and dropout
+        x = self.layer_norm(x)
+        x = self.dropout(x, training=training)
 
-        # Transformer blocks with power-aware attention
+        # Store attention weights if needed
+        all_attention_weights = []
+
+        # Transformer blocks
         for i in range(len(self.power_attention_layers)):
+            # Note: we're not concatenating additional features here
             attn_output, attn_weights = self.power_attention_layers[i](
-                x, x, x,
+                x, x,  # using same tensor for query and value
                 attention_mask=mask,
                 training=training,
                 return_attention_scores=True
             )
+
             x = self.layer_norms1[i](x + attn_output)
             all_attention_weights.append(attn_weights)
 
-            # Feed-forward network
             ff_output = x
             for layer in self.ff_layers[i]:
                 ff_output = layer(ff_output)
             x = self.layer_norms2[i](x + ff_output)
 
-        # Output processing
         x = self.final_layer_norm(x)
         x = self.dense1(x)
-        x = self.dense2(x)  # Output shape: [batch_size, seq_len, 1]
+        x = self.dense2(x)
 
-        # Return attention weights only if explicitly requested
         if return_attention_weights:
             return x, all_attention_weights
 
-        x = tf.clip_by_value(x, 1.0, self.config['appliance_max_power'], name=None)
-
+        x = tf.clip_by_value(x, 1.0, self.config['appliance_max_power'])
         return x
 
     def train_step(self, data):

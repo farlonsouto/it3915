@@ -3,8 +3,8 @@
 config = {
 
     # Training
-    "batch_size": 32,  # Larger for better gradient estimates
-    "epochs": 3,
+    "batch_size": 256,  # Larger for better gradient estimates
+    "epochs": 10,
     "learning_rate": 1e-4,  # Higher learning rate with warmup
     "optimizer": "adam",
     "loss": "bert4nilm_loss",  # "mse" or "huber" seems to make no difference
@@ -14,15 +14,15 @@ config = {
     "continuation": True,  # If it is the continuation of a previous training. True at the MLM 2nd run, without mask
 
     # Input
-    "window_size": 512,  # for UK Dale, 10 time steps mean 1 minute
+    "window_size": 599,  # for UK Dale, 10 time steps mean 1 minute
     "window_stride": 1,
-    "mlm_mask": True,  # MLM masking for BERT
-    "mask_token": -3100.0,
+    "mlm_mask": False,  # MLM masking for BERT
+    "mask_token": -978000.05,
     "masking_portion": 0.25,
     "add_artificial_activations": False,
     "balance_enabled": False,
     "standardize_aggregated": True,  # z-score, Uses mean and std: x = (x - x_mean) / x_std
-    "standardize_appliance": False,  # z-score, Uses mean and std: y = (y - y_mean) / y_std
+    "standardize_appliance": True,  # z-score, Uses mean and std: y = (y - y_mean) / y_std
 
     # 1D Convolution layer
     "conv_kernel_size": 5,
@@ -31,11 +31,11 @@ config = {
     "conv_activation": "relu",  # preferably ReLU
 
     # Transformer
-    "hidden_size": 256,  # Reduced to allow for more layers within same compute
-    "num_heads": 2,  # More heads to capture different pattern aspects
-    "num_layers": 2,  # Also for seq2seq LSTMs
+    "hidden_size": 64,  # Reduced to allow for more layers within same compute
+    "num_heads": 1,  # More heads to capture different pattern aspects
+    "num_layers": 1,  # Also for seq2seq LSTMs
     "ff_dim": 128,  # 4x hidden_size is the recommended
-    "dropout": 0.1,  # Applies also to the seq2seq LSTM
+    "dropout": 0.0,  # Applies also to the seq2seq LSTM
     "layer_norm_epsilon": 1e-6,  # Original value is 1e-6
     "dense_activation": "gelu",
 
@@ -62,40 +62,32 @@ def for_model_appliance(model_name, appliance_name) -> dict:
     if appliance_name == "kettle":
         config.update({
             "lambda_val": 1.0,
-            "appliance_max_power": 3100.00,
-            "on_threshold": 2000.0,
+            "appliance_max_power": 3948.00,
+            "on_threshold": 2000.00,
             "min_on_duration": 12,
             "min_off_duration": 0,
         })
     elif appliance_name == "fridge":
         config.update({
             "lambda_val": 1e-6,
-            "appliance_max_power": 400,
-            "on_threshold": 50,
+            "appliance_max_power": 2572.00,
+            "on_threshold": 50.00,
             "min_on_duration": 60,
             "min_off_duration": 12,
-        })
-    elif appliance_name == "washer":
-        config.update({
-            "lambda_val": 1e-2,
-            "appliance_max_power": 2500,
-            "on_threshold": 20,
-            "min_on_duration": 1800,
-            "min_off_duration": 160,
         })
     elif appliance_name == "microwave":
         config.update({
             "lambda_val": 1.0,
-            "appliance_max_power": 3000,
-            "on_threshold": 200,
+            "appliance_max_power": 3138.00,
+            "on_threshold": 200.00,
             "min_on_duration": 12,
             "min_off_duration": 30,
         })
     elif appliance_name == "dish washer":
         config.update({
             "lambda_val": 1.0,
-            "appliance_max_power": 2500,
-            "on_threshold": 10,
+            "appliance_max_power": 3230.00,
+            "on_threshold": 10.00,
             "min_on_duration": 1800,
             "min_off_duration": 1800,
         })

@@ -4,7 +4,7 @@ from keras import layers, Model
 class Seq2PointNILM(Model):
     """
     Sequence-to-point learning with neural networks for non-intrusive load monitoring
-    Chaoyun Zhang1 , Mingjun Zhong2 , Zongzuo Wang1 , Nigel Goddard1 , and Charles Sutton1
+    Chaoyun Zhang , Mingjun Zhong , Zongzuo Wang , Nigel Goddard , and Charles Sutton
     arXiv:1612.09106v3 [stat.AP] 18 Sep 2017
     School of Informatics, University of Edinburgh, United Kingdom
     School of Computer Science, University of Lincoln, United Kingdom

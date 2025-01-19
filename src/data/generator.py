@@ -130,7 +130,7 @@ class TimeSeriesDataGenerator(Sequence):
         aggregated, appliance_power = aggregated.align(appliance_power, join='inner', method='pad', limit=1)
 
         # Clip between 1.0 and max appliance power
-        appliance_power = appliance_power.clip(lower=1.0, upper=self.max_appliance_power)
+        # appliance_power = appliance_power.clip(lower=1.0, upper=self.max_appliance_power)
 
         # Any data modification or adjustment should take place before the normalization
         if self.appliance_name in ['kettle', 'microwave', 'dish washer', 'washer']:
