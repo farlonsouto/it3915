@@ -38,7 +38,7 @@ loss_fn_mapping = {
 
 if wandb_config.continuation:
     try:
-        nn_model = tf.keras.models.load_model('../models/{}_model'.format(model_name))
+        nn_model = tf.keras.models.load_model('../models/{}_{}_model'.format(model_name, appliance))
     except Exception as e:
         print("Error loading the model: ", e)
         print("Trying to rebuild the model and load weights...")
@@ -47,7 +47,7 @@ if wandb_config.continuation:
         nn_model = ModelFactory(wandb_config, True).create_model(model_name)
 
         # Load the weights from the checkpoint files
-        nn_model.load_weights('../models/{}_model'.format(model_name))
+        nn_model.load_weights('../models/{}_{}_model'.format(model_name, appliance))
         print("Model architecture rebuilt and weights loaded successfully!")
 
         # Reinitialize the optimizer
@@ -111,7 +111,7 @@ print("... The training data is available. Starting training ...")
 my_callbacks = [
     # WandbMetricsLogger(log_freq='batch'),
     EarlyStopping(patience=6, monitor='val_MAE', restore_best_weights=True),
-    ModelCheckpoint('../models/{}_model'.format(model_name), save_best_only=True, monitor='val_MAE', save_format="tf")
+    ModelCheckpoint('../models/{}_{}_model'.format(model_name, appliance), save_best_only=True, monitor='val_MAE', save_format="tf")
 ]
 
 # Train the model and track the training process using WandB

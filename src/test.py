@@ -23,7 +23,7 @@ wandb.init(
 wandb_config = wandb.config
 
 try:
-    nn_model = tf.keras.models.load_model('../models/{}_model'.format(model_name))
+    nn_model = tf.keras.models.load_model('../models/{}_{}_model'.format(model_name, appliance))
 except Exception as e:
     print("Error loading the model: ", e)
     print("Trying to rebuild the model and load weights...")
@@ -32,7 +32,7 @@ except Exception as e:
     nn_model = ModelFactory(wandb_config, False).create_model(model_name)
 
     # Load the weights from the checkpoint files
-    nn_model.load_weights('../models/{}_model'.format(model_name))
+    nn_model.load_weights('../models/{}_{}_model'.format(model_name, appliance))
     print("Model architecture rebuilt and weights loaded successfully!")
 
     # Compile the model for evaluation
