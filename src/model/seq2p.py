@@ -14,10 +14,6 @@ class Seq2PointNILM(Model):
         super(Seq2PointNILM, self).__init__()
         self.hyper_param = wandb_config
 
-        self.kernel_regularizer = None
-        if self.hyper_param.kernel_regularizer != 'None':
-            self.kernel_regularizer = self.hyper_param.kernel_regularizer
-
         # Convolutional layers
         self.conv1 = layers.Conv1D(
             filters=30,
@@ -26,7 +22,7 @@ class Seq2PointNILM(Model):
             activation='relu',
             padding='same',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
         self.conv2 = layers.Conv1D(
@@ -36,7 +32,7 @@ class Seq2PointNILM(Model):
             activation='relu',
             padding='same',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
         self.conv3 = layers.Conv1D(
@@ -46,7 +42,7 @@ class Seq2PointNILM(Model):
             activation='relu',
             padding='same',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
         self.conv4 = layers.Conv1D(
@@ -56,7 +52,7 @@ class Seq2PointNILM(Model):
             activation='relu',
             padding='same',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
         self.conv5 = layers.Conv1D(
@@ -66,7 +62,7 @@ class Seq2PointNILM(Model):
             activation='relu',
             padding='same',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
         # Flatten layer
@@ -77,14 +73,14 @@ class Seq2PointNILM(Model):
             units=1024,
             activation='relu',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
         self.dense2 = layers.Dense(
             units=1,
             activation='linear',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
     def call(self, inputs, training=None, mask=None):

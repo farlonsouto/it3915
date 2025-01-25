@@ -1,4 +1,3 @@
-import keras.layers
 import tensorflow as tf
 from tensorflow.keras import Model, layers
 
@@ -18,7 +17,7 @@ class BERT4NILM(Model):
             strides=config['conv_strides'],
             padding='same',
             activation=config['conv_activation'],
-            kernel_regularizer="l1_l2"
+            kernel_regularizer=config['kernel_regularizer']
         )
 
         # L2 Norm Pooling (learned)
@@ -31,7 +30,8 @@ class BERT4NILM(Model):
         self.pos_embedding = self.add_weight(
             "pos_embedding",
             shape=[config['window_size'] // 2, config['hidden_size']],
-            initializer=tf.keras.initializers.TruncatedNormal(stddev=0.02)
+            initializer=tf.keras.initializers.TruncatedNormal(stddev=0.02),
+            regularizer=config['kernel_regularizer']
         )
 
         # Add initial layer norm and dropout (to match PyTorch)
@@ -46,7 +46,8 @@ class BERT4NILM(Model):
                 config['ff_dim'],
                 config['dropout'],
                 config['layer_norm_epsilon'],
-                is_training
+                is_training,
+                config['kernel_regularizer']
             ) for _ in range(config['num_layers'])
         ]
 
@@ -57,11 +58,13 @@ class BERT4NILM(Model):
             strides=config['deconv_strides'],
             padding='same',
             activation=config['deconv_activation'],
-            kernel_regularizer="l1_l2"
+            kernel_regularizer=config['kernel_regularizer']
         )
 
-        self.dense1 = layers.Dense(config['hidden_size'], activation='linear')
-        self.dense2 = layers.Dense(config['output_size'], activation='tanh')
+        self.dense1 = layers.Dense(config['hidden_size'], activation='linear',
+                                   kernel_regularizer=config['kernel_regularizer'])
+        self.dense2 = layers.Dense(config['output_size'], activation='tanh',
+                                   kernel_regularizer=config['kernel_regularizer'])
 
     def call(self, inputs, training=False, mask=None):
         tf.debugging.check_numerics(inputs, 'inputs contains NaNs values')

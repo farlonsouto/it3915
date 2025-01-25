@@ -39,17 +39,18 @@ class LearnedL2NormPooling(layers.Layer):
 
 
 class TransformerBlock(layers.Layer):
-    def __init__(self, hidden_size, num_heads, ff_dim, dropout, epsilon, is_training):
+    def __init__(self, hidden_size, num_heads, ff_dim, dropout, epsilon, is_training, regularizer=None):
         super(TransformerBlock, self).__init__()
         self.is_training = is_training
         self.attention = layers.MultiHeadAttention(
             num_heads=num_heads,
             key_dim=hidden_size // num_heads,
-            dropout=dropout
+            dropout=dropout,
+            kernel_regularizer=regularizer
         )
         self.ffn = tf.keras.Sequential([
-            layers.Dense(ff_dim, activation="gelu"),
-            layers.Dense(hidden_size)
+            layers.Dense(ff_dim, activation="gelu", kernel_regularizer=regularizer),
+            layers.Dense(hidden_size, kernel_regularizer=regularizer)
         ])
         self.layernorm1 = layers.LayerNormalization(epsilon=epsilon)
         self.layernorm2 = layers.LayerNormalization(epsilon=epsilon)

@@ -13,9 +13,6 @@ class Seq2SeqNILM(Model):
     def __init__(self, wandb_config):
         super(Seq2SeqNILM, self).__init__()
         self.hyper_param = wandb_config
-        self.kernel_regularizer = None
-        if self.hyper_param.kernel_regularizer != 'None':
-            self.kernel_regularizer = self.hyper_param.kernel_regularizer
 
         # 1D Convolution layer for initial feature extraction
         self.conv1d = layers.Conv1D(
@@ -25,7 +22,7 @@ class Seq2SeqNILM(Model):
             padding='same',
             activation='linear',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
         # Input layer with dropout
@@ -37,7 +34,7 @@ class Seq2SeqNILM(Model):
                 units=128,
                 return_sequences=True,
                 kernel_initializer='truncated_normal',
-                kernel_regularizer=self.kernel_regularizer,
+                kernel_regularizer=self.hyper_param.kernel_regularizer,
             ),
             merge_mode='concat'
         )
@@ -51,7 +48,7 @@ class Seq2SeqNILM(Model):
                 units=256,
                 return_sequences=True,
                 kernel_initializer='truncated_normal',
-                kernel_regularizer=self.kernel_regularizer
+                kernel_regularizer=self.hyper_param.kernel_regularizer
             ),
             merge_mode='concat'
         )
@@ -61,7 +58,7 @@ class Seq2SeqNILM(Model):
             128,
             activation='tanh',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
         # Output dense layer
@@ -69,7 +66,7 @@ class Seq2SeqNILM(Model):
             1,
             activation='linear',
             kernel_initializer='truncated_normal',
-            kernel_regularizer=self.kernel_regularizer
+            kernel_regularizer=self.hyper_param.kernel_regularizer
         )
 
     def call(self, inputs, training=None, mask=None):
