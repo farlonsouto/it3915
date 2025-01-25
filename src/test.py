@@ -8,6 +8,7 @@ from data.timeseries import TimeSeries
 from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_model_appliance
 from model.factory import ModelFactory
+from rogue_arts import HarryPlotter
 
 # Set GPU memory growth
 set_gpu_memory_growth()
@@ -53,6 +54,9 @@ dataset = DataSet('../datasets/ukdale.h5')
 test_data = TimeSeries(dataset, [2], [2], wandb_config)
 
 test_gen = test_data.getTestDataGenerator()
+
+# plotter = HarryPlotter(nn_model, test_gen)
+# plotter.run()
 
 nn_model.evaluate(test_gen)
 
