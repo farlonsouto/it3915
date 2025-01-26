@@ -3,4 +3,4 @@ def build_model_path(simple_name, appliance, regularizer):
         kernel_reg = 'none'
     else:
         kernel_reg = regularizer
-    return '../models/{}_{}_model_{}'.format(simple_name, appliance, kernel_reg)
+    return '../models/{}_{}_{}'.format(simple_name, appliance, kernel_reg)

@@ -47,7 +47,7 @@ if wandb_config.continuation:
         print("Trying to rebuild the model and load weights...")
 
         # Rebuild the model
-        nn_model = ModelFactory(wandb_config, True).create_model(model_path)
+        nn_model = ModelFactory(wandb_config, True).create_model(model_name)
 
         # Load the weights from the checkpoint files
         nn_model.load_weights(model_path)
@@ -80,16 +80,16 @@ print("Fetching data from the dataset located at ", path_to_dataset)
 dataset = DataSet(path_to_dataset)
 dataset.set_window(start="09-11-2011", end="25-03-2017")
 # time series handler for the UK Dale dataset
-training_buildings = [1, 3, 4, 5]
-training_data = TimeSeries(dataset, training_buildings, [1], wandb_config)
+training_buildings = [1, 3, 4]
+training_data = TimeSeries(dataset, training_buildings, [5], wandb_config)
 
 # Building 1
 #   Training: 09/11/2011 to 25/03/2017
 # Validation: 26/03/2017 to 26/04/2017
 validation_dataset = DataSet(path_to_dataset)
-validation_dataset.set_window(start="26-03-2017", end="26-04-2017")
+# validation_dataset.set_window(start="26-03-2017", end="26-04-2017")
 # time series handler for the UK Dale dataset
-validation_data = TimeSeries(dataset, [1], [1], wandb_config)
+validation_data = TimeSeries(dataset, [5], [5], wandb_config)
 
 m_batch = None
 train_gen = training_data.getTrainingDataGenerator()
