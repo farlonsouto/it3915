@@ -9,6 +9,7 @@ from gpu.gpu_memory_allocation import set_gpu_memory_growth
 from hyper_params import for_model_appliance
 from model.factory import ModelFactory
 from rogue_arts import HarryPlotter
+from name_handler import build_model_path
 
 # Set GPU memory growth
 set_gpu_memory_growth()
@@ -23,8 +24,10 @@ wandb.init(
 # Retrieve the configuration from WandB
 wandb_config = wandb.config
 
+model_path = build_model_path(model_name, appliance, wandb_config.kernel_regularizer)
+
 try:
-    nn_model = tf.keras.models.load_model('../models/{}_{}_model'.format(model_name, appliance))
+    nn_model = tf.keras.models.load_model(model_path)
 except Exception as e:
     print("Error loading the model: ", e)
     print("Trying to rebuild the model and load weights...")
@@ -33,7 +36,7 @@ except Exception as e:
     nn_model = ModelFactory(wandb_config, False).create_model(model_name)
 
     # Load the weights from the checkpoint files
-    nn_model.load_weights('../models/{}_{}_model'.format(model_name, appliance))
+    nn_model.load_weights(model_path)
     print("Model architecture rebuilt and weights loaded successfully!")
 
     # Compile the model for evaluation
