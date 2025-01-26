@@ -41,7 +41,7 @@ model_path = build_model_path(model_name, appliance, wandb_config.kernel_regular
 
 if wandb_config.continuation:
     try:
-        nn_model = tf.keras.models.load_model()
+        nn_model = tf.keras.models.load_model(model_path)
     except Exception as e:
         print("Error loading the model: ", e)
         print("Trying to rebuild the model and load weights...")
