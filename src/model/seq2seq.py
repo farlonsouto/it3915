@@ -1,5 +1,5 @@
+from keras.layers import LSTM
 from tensorflow.keras import layers, Model
-from tensorflow.python.keras.layers import LSTM
 
 
 class Seq2SeqNILM(Model):
